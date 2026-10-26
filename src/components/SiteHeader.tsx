@@ -186,6 +186,8 @@ export function SiteHeader({ collections }: { collections: NavCollection[] }) {
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
+        // Close on any link tap — including a link to the page already open
+        onClick={(e) => (e.target as HTMLElement).closest("a") && setSheetOpen(false)}
         className={`fixed inset-0 z-50 flex flex-col bg-ivory transition-[opacity,visibility] duration-[var(--duration-base)] lg:hidden ${
           sheetOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}

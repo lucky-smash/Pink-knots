@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "@/components/Icons";
 import { GiftBoxIllustration } from "./GiftBoxIllustration";
+import { finalCardFraction } from "./heroCard";
 
 type Mode = "pending" | "scroll" | "static";
 
@@ -22,6 +23,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const cueRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<Mode>("pending");
   const [sceneReady, setSceneReady] = useState(false);
@@ -68,8 +70,11 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
       if (overlayRef.current) {
         // By now the camera is inside the box and the frame is already red, so this
         // only evens the lit liner out to flat Knot Red (red over red — nothing turns pink)
-        const w = clamp01((p - 0.92) / 0.08);
-        overlayRef.current.style.opacity = String(w * w * (3 - 2 * w));
+        const w = clamp01((p - 0.94) / 0.06);
+        const o = w * w * (3 - 2 * w);
+        overlayRef.current.style.opacity = String(o);
+        // The DOM card takes over from the 3D one at the same spot, then scrolls away with the page
+        if (cardRef.current) cardRef.current.style.opacity = String(o);
       }
       if (cueRef.current) cueRef.current.style.opacity = String(1 - clamp01(p / 0.05));
     };
@@ -97,6 +102,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
 
     const resize = () => {
       scene?.setSize(stage.clientWidth, stage.clientHeight);
+      if (cardRef.current) cardRef.current.style.width = `${finalCardFraction(stage.clientWidth / stage.clientHeight) * 100}%`;
       kick();
     };
 
@@ -232,6 +238,19 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
 
         {/* Settles to flat Knot Red once the camera is inside the box; the next section starts in the same red. */}
         <div ref={overlayRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 bg-knot" style={{ opacity: 0 }} />
+        {isScroll && (
+          <div
+            ref={cardRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-1/2 z-30 aspect-[8/5] -translate-x-1/2 -translate-y-1/2 bg-[#f4f1ec] shadow-[0_18px_40px_-12px_rgb(60_8_0/0.55)]"
+            style={{ opacity: 0, containerType: "inline-size" }}
+          >
+            <div className="absolute inset-[6.9%_4.3%] flex flex-col items-center justify-center border-[1.2cqw] border-knot">
+              <span className="accent text-[12.5cqw] leading-none text-knot">made for you</span>
+              <span className="mt-[4.5cqw] font-display text-[4.3cqw] leading-none font-semibold tracking-[0.06em] text-ink">PINK KNOTS</span>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -33,7 +33,7 @@ export default function HomePage() {
 
       {/* Inside the box: begins in the same Knot Red the hero ends on */}
       <section id="inside" aria-labelledby="inside-title" className="relative overflow-hidden bg-knot text-paper">
-        <EngravedKnot tone="knot" className="-top-[2%] -right-[22%] w-[min(1150px,120vw)] md:-right-[8%]" />
+        <EngravedKnot tone="knot" className="top-6 -right-[22%] w-[min(1150px,120vw)] md:-right-[8%]" />
         <EngravedKnot tone="knot" flip="x" className="top-[46%] -left-[40%] w-[min(900px,110vw)] md:-left-[14%]" />
         <EngravedKnot tone="knot" flip="y" className="-right-[10%] -bottom-[4%] hidden w-[min(560px,40vw)] lg:block" />
         <div className="relative container-page pt-16 pb-20 md:pt-24 md:pb-28">

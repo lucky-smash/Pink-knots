@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { finalCardFraction } from "./heroCard";
 
 // Knot Red (#C82A0F), pre-darkened so it survives ACES tone mapping and the warm key light on screen
 const KNOT_LIT = 0xa61f08;
@@ -17,6 +18,11 @@ const WALL = 0.07;
 const LID_H = 0.42;
 const LID_OVER = 0.05; // lid overhang on each side
 const RIBBON = 0.3;
+const CARD_W = 1.2;
+// End of the dive: camera just under the rim, looking down at the card on the liner floor
+const CARD_FLOOR = WALL + 0.012;
+const INSIDE_Y = H - 0.15;
+const INSIDE_FOV = 42;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 /** Remaps v from [a,b] to [0,1], clamped. */
@@ -246,7 +252,7 @@ export class GiftBoxScene {
     // A small card that rises from inside once the tissue opens
     const cardTex = cardTexture();
     this.disposables.push(cardTex);
-    this.card = new THREE.Mesh(track(new THREE.BoxGeometry(1.2, 0.012, 0.75)), [
+    this.card = new THREE.Mesh(track(new THREE.BoxGeometry(CARD_W, 0.012, CARD_W / 1.6)), [
       tissueMat, tissueMat, new THREE.MeshStandardMaterial({ map: cardTex, roughness: 0.7 }), tissueMat, tissueMat, tissueMat,
     ]);
     this.card.castShadow = true;
@@ -399,10 +405,13 @@ export class GiftBoxScene {
     // Leaves stand just past vertical against the walls, like tissue folded back
     this.flaps.forEach((f, i) => (f.rotation.z = (i ? -1 : 1) * tissue * 1.78));
     const cardRise = easeOut(span(p, 0.62, 0.8));
-    // As the camera dives, the card tucks back against the rear wall, clearing the way to the red floor
-    const tuck = easeInOut(span(p, 0.74, 0.9));
-    this.card.position.set(0, lerp(H * 0.55 + cardRise * 0.5, 0.45, tuck), lerp(0.1, -(W / 2 - WALL) + 0.12, tuck));
-    this.card.rotation.set(lerp(-cardRise * 0.35, 1.3, tuck), lerp(-0.12, 0, tuck), 0);
+    // As the camera dives, the card settles flat on the floor under the lens, shrinking to the
+    // size the DOM card takes over at (so it never looms up at the camera)
+    const settle = easeInOut(span(p, 0.74, 0.9));
+    const floorView = 2 * (INSIDE_Y - CARD_FLOOR) * Math.tan(THREE.MathUtils.degToRad(INSIDE_FOV / 2)) * aspect;
+    this.card.scale.setScalar(lerp(1, (finalCardFraction(aspect) * floorView) / CARD_W, settle));
+    this.card.position.set(0, lerp(H * 0.55 + cardRise * 0.5, CARD_FLOOR, settle), lerp(0.1, -0.02, settle));
+    this.card.rotation.set(lerp(-cardRise * 0.35, 0, settle), lerp(-0.12, 0, settle), 0);
 
     // Box turns gently through the sequence and squares up for the descent
     this.root.rotation.y = lerp(-0.62, 0.0, easeInOut(span(p, 0, 0.6))) + Math.sin(this.time * 0.35) * 0.05 * idle;
@@ -415,19 +424,20 @@ export class GiftBoxScene {
     const offsetX = portrait ? 0 : aspect > 1.5 ? -1.45 : -1.1;
     const start = new THREE.Vector3(offsetX, 2.5 * fit, 9.6 * fit);
     const over = new THREE.Vector3(offsetX * 0.75, 6.2 * fit, 3.2 * fit);
-    // Below the rim, just above the liner floor: every wall in view is Knot Red
-    const inside = new THREE.Vector3(0, 0.75, 0.12);
+    // Just below the rim: every wall in view is Knot Red, with the card centred on the floor
+    const inside = new THREE.Vector3(0, INSIDE_Y, 0.06);
     const lookStart = new THREE.Vector3(offsetX, portrait ? -1.2 : 0.75, 0);
     const lookOver = new THREE.Vector3(offsetX * 0.75, portrait ? -1.4 : 0.6, 0);
-    const lookInside = new THREE.Vector3(0, 0, -0.05);
+    const lookInside = new THREE.Vector3(0, CARD_FLOOR, -0.02);
 
     const toOver = easeInOut(span(p, 0.36, 0.7));
-    const toInside = easeInOut(span(p, 0.74, 1));
+    // Lands by 0.94 so the hand-off to the DOM card (0.94 → 1) happens on a still frame
+    const toInside = easeInOut(span(p, 0.74, 0.94));
     const camPos = start.clone().lerp(over, toOver).lerp(inside, toInside);
     const look = lookStart.clone().lerp(lookOver, toOver).lerp(lookInside, toInside);
     this.camera.position.copy(camPos);
     this.camera.lookAt(look);
-    this.camera.fov = lerp(30, 42, toInside);
+    this.camera.fov = lerp(30, INSIDE_FOV, toInside);
     this.camera.updateProjectionMatrix();
 
     this.shadow.visible = toInside < 0.9;
