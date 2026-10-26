@@ -1,0 +1,210 @@
+@import "tailwindcss";
+
+/*
+ * Pink Knots design tokens.
+ * Knot Red (#C82A0F) is the one brand colour; everything else is a warm neutral
+ * drawn from packaging materials — ivory tissue, kraft board, charcoal rigid box.
+ */
+@theme {
+  /* Brand */
+  --color-knot: #c82a0f;
+  --color-knot-deep: #a32109;
+  --color-knot-ink: #7a1806;
+  --color-knot-tint: #f7e4dd;
+
+  /* Neutrals */
+  --color-ink: #1a1613;
+  --color-ink-soft: #3a332d;
+  --color-stone: #6b6259;
+  --color-ivory: #f6f1e9;
+  --color-paper: #fffdf9;
+  --color-kraft: #e7dcc9;
+  --color-line: #e2d8c9;
+  --color-line-strong: #cbbfad;
+
+  /* Type */
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-accent: var(--font-instrument), ui-serif, Georgia, serif;
+
+  /* Fluid type scale (display sizes only; body uses the default rem scale) */
+  --text-hero: clamp(2.75rem, 1.6rem + 5.2vw, 6.5rem);
+  --text-hero--line-height: 0.95;
+  --text-hero--letter-spacing: -0.035em;
+  --text-display: clamp(2.25rem, 1.5rem + 3.2vw, 4.5rem);
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: clamp(1.75rem, 1.3rem + 1.6vw, 2.75rem);
+  --text-title--line-height: 1.08;
+  --text-title--letter-spacing: -0.02em;
+
+  /* Shape */
+  --radius-card: 0.875rem;
+  --radius-control: 999px;
+
+  /* Elevation — warm-tinted, never grey */
+  --shadow-card: 0 1px 2px rgb(26 22 19 / 0.04), 0 8px 24px -12px rgb(26 22 19 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(26 22 19 / 0.05), 0 22px 44px -20px rgb(26 22 19 / 0.32);
+  --shadow-menu: 0 24px 60px -24px rgb(26 22 19 / 0.35), 0 2px 6px rgb(26 22 19 / 0.06);
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 160ms;
+  --duration-base: 320ms;
+  --duration-slow: 700ms;
+
+  --breakpoint-xs: 30rem;
+}
+
+@layer base {
+  html {
+    background: var(--color-ivory);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    scroll-padding-top: 5.5rem;
+  }
+  body {
+    background: var(--color-ivory);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+  ::selection { background: var(--color-knot); color: var(--color-paper); }
+  :focus-visible {
+    outline: 2px solid var(--color-knot);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 84rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
+  }
+
+  /* Small all-caps label with a red knot dot — the brand's signature eyebrow */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-stone);
+  }
+  .eyebrow::before {
+    content: "";
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: var(--color-knot);
+    flex: none;
+  }
+  .eyebrow-on-dark { color: rgb(255 253 249 / 0.78); }
+  .eyebrow-on-dark::before { background: var(--color-paper); }
+
+  .accent {
+    font-family: var(--font-accent);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 3rem;
+    padding: 0 1.4rem;
+    border-radius: var(--radius-control);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    transition:
+      background-color var(--duration-fast) ease,
+      color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      transform var(--duration-base) var(--ease-out-soft),
+      box-shadow var(--duration-base) var(--ease-out-soft);
+  }
+  .btn:active { transform: translateY(1px) scale(0.99); }
+  .btn svg { transition: transform var(--duration-base) var(--ease-out-soft); }
+  .btn:hover svg.arrow { transform: translateX(3px); }
+
+  .btn-primary { background: var(--color-knot); color: var(--color-paper); }
+  .btn-primary:hover { background: var(--color-knot-deep); box-shadow: 0 10px 24px -12px rgb(200 42 15 / 0.7); }
+  .btn-dark { background: var(--color-ink); color: var(--color-paper); }
+  .btn-dark:hover { background: var(--color-ink-soft); }
+  .btn-outline { border: 1.5px solid var(--color-ink); color: var(--color-ink); }
+  .btn-outline:hover { background: var(--color-ink); color: var(--color-paper); }
+  .btn-light { background: var(--color-paper); color: var(--color-ink); }
+  .btn-light:hover { background: var(--color-ivory); }
+  .btn-ghost-light { border: 1.5px solid rgb(255 253 249 / 0.55); color: var(--color-paper); }
+  .btn-ghost-light:hover { background: var(--color-paper); color: var(--color-knot); border-color: var(--color-paper); }
+  .btn-sm { min-height: 2.5rem; padding: 0 1rem; font-size: 0.875rem; }
+
+  /* Underline that draws in from the left on hover */
+  .link-draw {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1.5px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size var(--duration-base) var(--ease-out-soft), color var(--duration-fast) ease;
+  }
+  .link-draw:hover, .link-draw[aria-current="page"] { background-size: 100% 1.5px; }
+
+  .field {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.7rem 0.95rem;
+    border: 1.5px solid var(--color-line);
+    border-radius: 0.6rem;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+  }
+  .field:hover { border-color: var(--color-line-strong); }
+  .field:focus { outline: none; border-color: var(--color-knot); box-shadow: 0 0 0 3px rgb(200 42 15 / 0.14); }
+  .field[aria-invalid="true"] { border-color: var(--color-knot); }
+
+  /* Scroll reveal; JS adds .is-visible. Without JS or with reduced motion, content is simply shown. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity var(--duration-slow) var(--ease-out-soft), transform var(--duration-slow) var(--ease-out-soft);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal.is-visible { opacity: 1; transform: none; }
+}
+
+@keyframes cue {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+
+.no-js .reveal { opacity: 1; transform: none; }
