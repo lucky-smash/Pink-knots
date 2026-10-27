@@ -48,7 +48,7 @@ export class LogoRibbon {
 
   /** `size`: the symbol's width end to end, in world units. */
   constructor(private size: number) {
-    const { points, widths, colours } = logoRibbon;
+    const { points, widths, shades } = logoRibbon;
     this.n = points.length;
     this.centre = points.map(([x, y]) => new THREE.Vector3(x * size, y * size, 0));
     this.logoW = widths.map((w) => w * size);
@@ -61,22 +61,28 @@ export class LogoRibbon {
     const logo = new Float32Array(verts * 3); // the logo's sRGB colour, for the flat look
     const lit = new Float32Array(verts * 3); // linear, pre-darkened for the lit satin
     const c = new THREE.Color();
+    const shade = (i: number, j: number) => c.set(shades[i][Math.round(PROFILE[j][2] * (FACE - 1))]).convertLinearToSRGB();
     for (let i = 0; i < this.n; i++) {
-      c.set(colours[i]);
-      const srgb = c.clone().convertLinearToSRGB();
+      // The lit satin takes the band's average colour and lets the light do the shading; the flat
+      // look takes the logo's own shading across the band (dark edges, bright middle streak)
+      const avg = new THREE.Color(0, 0, 0);
+      for (const s of shades[i]) avg.add(c.set(s));
+      avg.multiplyScalar(1 / shades[i].length);
       // Pre-darkened so the lit, ACES-tone-mapped satin lands near the logo's colour. By luminance:
       // the logo's limes are ~3× brighter than its magenta, and would blow out to a pale wash
-      const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-      const dark = c.clone().multiplyScalar(0.42 * Math.min(1, Math.sqrt(0.24 / Math.max(lum, 1e-4))));
+      const lum = 0.2126 * avg.r + 0.7152 * avg.g + 0.0722 * avg.b;
+      const dark = avg.multiplyScalar(0.42 * Math.min(1, Math.sqrt(0.24 / Math.max(lum, 1e-4))));
       for (let j = 0; j < RING; j++) {
         const k = i * RING + j;
         uv.set([this.lengths[i] / SATIN_TILE, PROFILE[j][2]], k * 2);
-        logo.set([srgb.r, srgb.g, srgb.b], k * 3);
+        shade(i, j);
+        logo.set([c.r, c.g, c.b], k * 3);
         lit.set([dark.r, dark.g, dark.b], k * 3);
       }
     }
     for (const [cap, i] of [[this.n * RING, 0], [this.n * RING + 1, this.n - 1]]) {
-      logo.set(logo.subarray(i * RING * 3, i * RING * 3 + 3), cap * 3);
+      c.set(shades[i][FACE >> 1]).convertLinearToSRGB();
+      logo.set([c.r, c.g, c.b], cap * 3);
       lit.set(lit.subarray(i * RING * 3, i * RING * 3 + 3), cap * 3);
       uv.set([this.lengths[i] / SATIN_TILE, 0.5], cap * 2);
     }
@@ -143,10 +149,10 @@ export class LogoRibbon {
     for (let i = 0; i < n; i++) {
       tangent.subVectors(centres[Math.min(n - 1, i + 1)], centres[Math.max(0, i - 1)]).normalize();
       flat.set(-tangent.y, tangent.x, 0).normalize();
-      // Toward the cut ends the twist eases off (smoothly, so no kink) and the band narrows a
-      // little, as the logo's ends do
+      // Toward the cut ends the twist eases off (smoothly, so no kink). The ends keep the logo's
+      // own measured widths, so they're cut where and as the logo's are
       const tip = smooth(Math.min(1, i / 10, (n - 1 - i) / 10));
-      const seen = this.logoW[i] * (0.65 + 0.35 * tip);
+      const seen = this.logoW[i];
       const trueW = lerp(seen, Math.max(seen, this.bandW), twist * tip);
       const turn = Math.acos(Math.min(1, Math.max(0.17, seen / trueW)));
       across.copy(flat).multiplyScalar(Math.cos(turn)).addScaledVector(z, Math.sin(turn));

@@ -19,10 +19,10 @@ const N = 200; // samples along the ribbon
 // Route guide in 8× pixels of the trimmed symbol (952 × 528), end A → end B. Passes the crossing twice.
 const CROSS = [495, 300];
 const GUIDE = [
-  [40, 100], [110, 35], [200, 22], [275, 70], [340, 145], [420, 235], CROSS, [570, 365], [660, 415],
+  [34, 108], [110, 35], [200, 22], [275, 70], [340, 145], [420, 235], CROSS, [570, 365], [660, 415],
   [760, 440], [850, 425], [915, 370], [940, 290], [925, 205], [885, 145], [820, 105], [745, 95],
   [675, 112], [610, 160], [555, 225], CROSS, [440, 370], [370, 430], [285, 478], [195, 490],
-  [120, 462], [68, 400], [38, 320], [30, 240], [42, 165],
+  [120, 462], [68, 400], [38, 320], [30, 240], [41, 154],
 ];
 
 const sym = await sharp(SRC).extract({ left: 0, top: 0, width: 119, height: SYMBOL_ROWS }).trim({ threshold: 0 }).toBuffer();
@@ -77,11 +77,14 @@ const normals = (pts) =>
     const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
     return [-(b[1] - a[1]) / l, (b[0] - a[0]) / l];
   });
+// The window narrows toward either end, so the ends stay put instead of being pulled back along
+// the ribbon (which cut both tips short of the logo's)
 const smooth = (arr, r) =>
   arr.map((_, i) => {
     let s = Array.isArray(arr[0]) ? arr[0].map(() => 0) : 0;
     let n = 0;
-    for (let k = Math.max(0, i - r); k <= Math.min(arr.length - 1, i + r); k++) {
+    const w = Math.min(r, i, arr.length - 1 - i);
+    for (let k = i - w; k <= i + w; k++) {
       s = Array.isArray(s) ? s.map((v, d) => v + arr[k][d]) : s + arr[k];
       n++;
     }
@@ -89,7 +92,7 @@ const smooth = (arr, r) =>
   });
 
 // The ribbon run along the normal through p: the contiguous inside stretch nearest to p
-function run(p, nrm, reach = 48) {
+function run(p, nrm, reach = 72) {
   const hits = [];
   for (let d = -reach; d <= reach; d += 0.5) hits.push(inside(p[0] + nrm[0] * d, p[1] + nrm[1] * d) ? d : null);
   const runs = [];
@@ -147,8 +150,40 @@ const bridge = (arr, zones) => {
   }
   return out;
 };
-const zones = zonesWithin(70);
-pts = smooth(bridge(pts, zones), 3);
+// Positions bridge on a curve (cubic Hermite, tangents taken either side), not a straight chord:
+// the magenta diagonal bends through the crossing, and a chord pulled it off the logo's strand
+const bridgeCurve = (arr, zones) => {
+  const out = arr.slice();
+  for (const [a, b] of zones) {
+    const lo = Math.max(3, a - 1);
+    const hi = Math.min(arr.length - 4, b + 1);
+    const m = hi - lo;
+    const t0 = [0, 1].map((d) => ((arr[lo][d] - arr[lo - 3][d]) / 3) * m);
+    const t1 = [0, 1].map((d) => ((arr[hi + 3][d] - arr[hi][d]) / 3) * m);
+    for (let i = a; i <= b; i++) {
+      const t = (i - lo) / m;
+      const [h00, h10, h01, h11] = [2 * t ** 3 - 3 * t ** 2 + 1, t ** 3 - 2 * t ** 2 + t, -2 * t ** 3 + 3 * t ** 2, t ** 3 - t ** 2];
+      out[i] = [0, 1].map((d) => h00 * arr[lo][d] + h10 * t0[d] + h01 * arr[hi][d] + h11 * t1[d]);
+    }
+  }
+  return out;
+};
+const zones = zonesWithin(115);
+pts = smooth(bridgeCurve(pts, zones), 3);
+// Smoothing draws a tight curve in toward its inside (most at the indigo tip's curl), so snap to
+// the logo once more outside the crossing and only lightly smooth after
+const inZone = (i) => zones.some(([a, b]) => i >= a && i <= b);
+{
+  const nrm = normals(pts);
+  pts = pts.map((p, i) => {
+    const r = !inZone(i) && run(p, nrm[i]);
+    if (!r) return p;
+    widths[i] = r[1] - r[0];
+    const mid = (r[0] + r[1]) / 2;
+    return [p[0] + nrm[i][0] * mid, p[1] + nrm[i][1] * mid];
+  });
+  pts = smooth(pts, 1);
+}
 
 const nrm = normals(pts);
 let colours = pts.map((p, i) => {
@@ -171,6 +206,27 @@ colours = colours.map((c, i) => {
 widths = smooth(bridge(widths, zones), 3);
 colours = smooth(bridge(colours, zonesWithin(100)), 5); // soft blends, like the logo's gradient
 
+// The logo's shading across the band (dark edges, a bright streak down the middle): SHADES colours
+// at even steps across, ordered as the 3D band's u runs (-1 → 1), which is the image normal's −d → +d
+// reversed, because the image's y points down
+const SHADES = 7;
+let shades = pts.map((p, i) =>
+  Array.from({ length: SHADES }, (_, k) => {
+    const u = -0.96 + (1.92 * k) / (SHADES - 1);
+    const at = -u * 0.8 * (widths[i] / 2);
+    const samples = [];
+    for (let d = at - 4; d <= at + 4; d += 2) {
+      const c = colourAt(p[0] + nrm[i][0] * d, p[1] + nrm[i][1] * d);
+      if (c && !(Math.min(...c) > 165 && Math.max(...c) - Math.min(...c) < 100)) samples.push(c);
+    }
+    if (!samples.length) return colours[i];
+    return [0, 1, 2].map((ch) => samples.map((s) => s[ch]).sort((a, b) => a - b)[samples.length >> 1]);
+  }),
+);
+const crossShade = zonesWithin(100);
+const bands = Array.from({ length: SHADES }, (_, k) => smooth(bridge(shades.map((s) => s[k]), crossShade), 3));
+shades = shades.map((_, i) => bands.map((b) => b[i]));
+
 // Normalise: symbol width = 1, origin at the symbol's centre, y up
 const toUnit = ([x, y]) => [+(x / BW - 0.5).toFixed(4), +((BH / 2 - y) / BW).toFixed(4)];
 const hex = (c) => "#" + c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
@@ -182,6 +238,7 @@ const data = {
   points: pts.map(toUnit),
   widths: widths.map((w) => +(w / BW).toFixed(4)),
   colours: colours.map(hex),
+  shades: shades.map((s) => s.map(hex)),
 };
 writeFileSync(OUT, JSON.stringify(data) + "\n");
 console.log(`logo-ribbon.json: ${N} samples, crossings at ${data.crossing}, widths ${Math.min(...data.widths)}–${Math.max(...data.widths)}`);
