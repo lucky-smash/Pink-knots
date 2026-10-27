@@ -1,5 +1,5 @@
 // Procedural Pink Knots gift box: an aubergine rigid box with a logo-magenta satin
-// ribbon, tied off with the logo's infinity knot. `setProgress(0..1)` drives the whole opening sequence, so the
+// ribbon, tied off with the logo's infinity knot as a bow. `setProgress(0..1)` drives the whole opening sequence, so the
 // scene is a pure function of scroll position — no timers, no hidden state.
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
@@ -33,7 +33,6 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const span = (v: number, a: number, b: number) => clamp01((v - a) / (b - a));
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
-const easeIn = (t: number) => t * t * t;
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 function wordmarkTexture() {
@@ -270,83 +269,103 @@ function logoRibbonColor(f: number, out: THREE.Color) {
 }
 
 /**
- * The logo's infinity knot as a satin band standing on the lid, in place of a bow. The band runs
- * round a lemniscate, passing in front of itself at the centre (the logo's magenta "\" strand over
- * the green one), and twists towards edge-on at the loop tips, where the logo ribbon thins.
- * Centred on the crossing; faces +Z.
+ * The logo's infinity knot tied as a bow: a satin band round a lemniscate, passing in front of
+ * itself at the crossing (the logo's magenta "\" strand over the green one), twisting toward
+ * edge-on at the loop tips where the logo ribbon thins. Shaped like bow loops: the crossing sits
+ * low in the knot wrap and each loop rises up and out from it, its lower edge resting near the
+ * lid. Crossing at the origin, loops along ±X, faces +Z.
+ *
+ * `writeKnot` re-lays the band for a pull: `left`/`right` (1 → 0) are how far each loop has
+ * slipped back through the knot. The band is rebuilt along the smaller loop rather than bent, so
+ * it keeps its width, twist and satin at every pose and never tears or folds through itself.
  */
-function infinityKnotGeometry(width: number, height: number, band: number, depth: number) {
-  const segs = 260;
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const uvs: number[] = [];
-  const index: number[] = [];
-  const at = (t: number) => {
-    const s = Math.sin(t);
-    const c = Math.cos(t);
-    const den = 1 + s * s;
-    // x spans ±width/2; y is flipped so the over strand (s = 1) runs top-left to bottom-right
-    return new THREE.Vector3(((width / 2) * c) / den, (-height * 1.42 * s * c) / den, depth * s);
-  };
+const KNOT_SEGS = 260;
+
+function knotPoint(t: number, width: number, height: number, depth: number, left: number, right: number, out: THREE.Vector3) {
+  const s = Math.sin(t);
+  const c = Math.cos(t);
+  const den = 1 + s * s;
+  const x = ((width / 2) * c) / den;
+  // y is flipped so the over strand (s = 1) runs top-left to bottom-right, like the logo
+  const y0 = (-height * 1.42 * s * c) / den;
+  // Lower edges flattened toward the crossing (smoothly, so the loop tips stay round), loops lifted
+  const y = y0 * (0.7 + 0.3 * Math.tanh(y0 / 0.05)) + height * 0.3 * Math.abs((2 * x) / width) ** 1.4;
+  // Each side shrinks toward the crossing by its own pull, blended across the middle
+  const w = clamp01((x + 0.06) / 0.12);
+  const k = lerp(left, right, w * w * (3 - 2 * w));
+  // Height goes a little slower than width, so a loop rounds up as it's drawn through
+  return out.set(x * k, y * Math.pow(k, 0.8), depth * s);
+}
+
+function writeKnot(g: THREE.BufferGeometry, left: number, right: number) {
+  const { width, height, band, depth } = g.userData as { width: number; height: number; band: number; depth: number };
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  const uv = g.attributes.uv as THREE.BufferAttribute;
+  const p = new THREE.Vector3();
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
   const z = new THREE.Vector3(0, 0, 1);
-  const col = new THREE.Color();
-  // The band's centre line (x, y, z, sin t) and half-width offsets, kept for poseKnot
-  const centres: number[] = [];
-  const offsets: number[] = [];
+  const prev = new THREE.Vector3();
   let length = 0;
-  for (let i = 0; i <= segs; i++) {
-    if (i) length += at((i / segs) * Math.PI * 2).distanceTo(at(((i - 1) / segs) * Math.PI * 2));
-    const t = (i / segs) * Math.PI * 2;
+  for (let i = 0; i <= KNOT_SEGS; i++) {
+    const t = (i / KNOT_SEGS) * Math.PI * 2;
     const s = Math.sin(t);
-    const p = at(t);
-    const tangent = at(t + 0.001).sub(at(t - 0.001)).normalize();
+    knotPoint(t, width, height, depth, left, right, p);
+    if (i) length += p.distanceTo(prev);
+    prev.copy(p);
+    const tangent = knotPoint(t + 0.001, width, height, depth, left, right, a).sub(knotPoint(t - 0.001, width, height, depth, left, right, b)).normalize();
     const normal = new THREE.Vector3(-tangent.y, tangent.x, 0).normalize();
     const twist = 1.05 * Math.cos(t) ** 2;
     const across = normal.multiplyScalar(Math.cos(twist)).addScaledVector(z, Math.sin(twist));
     const half = (band / 2) * (0.82 + 0.18 * s);
-    centres.push(p.x, p.y, p.z, s);
-    offsets.push(...across.clone().multiplyScalar(half).toArray());
-    positions.push(...p.clone().addScaledVector(across, -half).toArray(), ...p.clone().addScaledVector(across, half).toArray());
-    logoRibbonColor((1 + s) / 2, col);
+    pos.setXYZ(i * 2, p.x - across.x * half, p.y - across.y * half, p.z - across.z * half);
+    pos.setXYZ(i * 2 + 1, p.x + across.x * half, p.y + across.y * half, p.z + across.z * half);
+    uv.setXY(i * 2, length / SATIN_TILE, 0);
+    uv.setXY(i * 2 + 1, length / SATIN_TILE, 1);
+  }
+  pos.needsUpdate = true;
+  uv.needsUpdate = true;
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+}
+
+function infinityKnotGeometry(width: number, height: number, band: number, depth: number) {
+  const n = (KNOT_SEGS + 1) * 2;
+  const colors: number[] = [];
+  const index: number[] = [];
+  const col = new THREE.Color();
+  for (let i = 0; i <= KNOT_SEGS; i++) {
+    logoRibbonColor((1 + Math.sin((i / KNOT_SEGS) * Math.PI * 2)) / 2, col);
     colors.push(col.r, col.g, col.b, col.r, col.g, col.b);
-    uvs.push(length / SATIN_TILE, 0, length / SATIN_TILE, 1);
-    if (i < segs) {
+    if (i < KNOT_SEGS) {
       const a = i * 2;
       index.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
     }
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  g.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(n * 3), 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
   g.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   g.setIndex(index);
-  g.computeVertexNormals();
-  g.userData = { width, height, centres, offsets };
+  g.userData = { width, height, band, depth };
+  writeKnot(g, 1, 1);
   return g;
 }
 
 /**
- * Unties the knot in place. `flip` turns the right loop over through the crossing, so the strands
- * no longer pass over each other; `slack` lets the pinched waist fall open into one loose loop.
+ * The knot wrap: a short length of ribbon bound round the crossing, as in a tied bow. An ellipse
+ * round the X axis, sized to enclose both strands (they cross at z = ±depth).
  */
-function poseKnot(g: THREE.BufferGeometry, flip: number, slack: number) {
-  const { width, height, centres, offsets } = g.userData as { width: number; height: number; centres: number[]; offsets: number[] };
-  const pos = g.attributes.position as THREE.BufferAttribute;
-  for (let i = 0; i < centres.length / 4; i++) {
-    const [x, y, z, s] = [centres[i * 4], centres[i * 4 + 1], centres[i * 4 + 2], centres[i * 4 + 3]];
-    const [ox, oy, oz] = [offsets[i * 3], offsets[i * 3 + 1], offsets[i * 3 + 2]];
-    // Only the right loop turns, eased in across the crossing so the band never tears
-    const w = clamp01((x + 0.12) / 0.24);
-    const a = Math.PI * flip * w * w * (3 - 2 * w);
-    const [cos, sin] = [Math.cos(a), Math.sin(a)];
-    const cy = y * cos - z * sin + slack * height * 0.45 * s * Math.max(0, 1 - ((2 * x) / width) ** 2);
-    const cz = (y * sin + z * cos) * (1 - 0.85 * slack);
-    const [ry, rz] = [oy * cos - oz * sin, oy * sin + oz * cos];
-    pos.setXYZ(i * 2, x - ox, cy - ry, cz - rz);
-    pos.setXYZ(i * 2 + 1, x + ox, cy + ry, cz + rz);
+function knotWrapGeometry(width: number, ry: number, rz: number) {
+  const centre: THREE.Vector3[] = [];
+  const across: THREE.Vector3[] = [];
+  // Starts at the back and overlaps itself a little, so unwinding it reads front-last
+  for (let i = 0; i <= 52; i++) {
+    const a = Math.PI + (i / 48) * Math.PI * 2;
+    centre.push(new THREE.Vector3(0, ry * Math.sin(a), rz * Math.cos(a)));
+    across.push(new THREE.Vector3(1, 0, 0));
   }
-  pos.needsUpdate = true;
-  g.computeVertexNormals();
+  return ribbonStripGeometry(centre, across, width);
 }
 
 /** Shows a ribbon strip drawn out from its start by `t` of its length, a whole segment at a time. */
@@ -354,6 +373,34 @@ function drawOut(m: THREE.Mesh, t: number) {
   const total = m.geometry.index!.count;
   const cut = Math.round((t * total) / 12) * 12; // ribbonStripGeometry: 12 indices per segment
   m.geometry.setDrawRange(cut, total - cut);
+  m.visible = cut < total;
+}
+
+/**
+ * A band loosened by `t`: the run across the top lifts off the board in a shallow arch, highest over
+ * the knot and easing to nothing at the rounded edges. Kept low and smooth: steeper, or rippled,
+ * the satin turns toward the key light and glares white when the camera sees the top edge-on.
+ * Band space: x along it.
+ */
+function loosenBand(g: THREE.BufferGeometry, t: number, rise: number) {
+  const rest = g.userData.rest as Float32Array;
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  const top = LID_H - 0.01;
+  const reach = (W + LID_OVER * 2) / 2 - 0.035; // where the top meets the rounded edge
+  for (let i = 0; i < pos.count; i++) {
+    const [x, y, z] = [rest[i * 3], rest[i * 3 + 1], rest[i * 3 + 2]];
+    const u = Math.min(1, Math.abs(x) / reach);
+    pos.setXYZ(i, x, y + (y > top ? t * rise * (1 - u * u) ** 2 : 0), z);
+  }
+  pos.needsUpdate = true;
+  g.computeVertexNormals();
+}
+
+/** The reverse: the strip's far end drawn back toward its start by `t` of its length. */
+function drawIn(m: THREE.Mesh, t: number) {
+  const total = m.geometry.index!.count;
+  const cut = Math.round((t * total) / 12) * 12;
+  m.geometry.setDrawRange(0, total - cut);
   m.visible = cut < total;
 }
 
@@ -379,10 +426,13 @@ export class GiftBoxScene {
   private lid = new THREE.Group();
   private bow = new THREE.Group();
   private knot: THREE.Mesh;
+  private knotTilt = new THREE.Group();
+  private wrap: THREE.Mesh;
   private tails: THREE.Mesh[] = [];
-  private knotPose = { flip: 0, slack: 0 };
+  private knotPull = { left: 1, right: 1 };
   private bandX: THREE.Mesh;
   private bandZ: THREE.Mesh;
+  private bandSlack = -1;
   private flaps: THREE.Group[] = [];
   private card: THREE.Mesh;
   private shadow: THREE.Mesh;
@@ -548,17 +598,28 @@ export class GiftBoxScene {
     lidShell.position.y = LID_H / 2;
     this.lid.add(lidShell);
 
-    // Ribbon bands wrap round the lid's rounded edges and tuck under it. They're pulled away by
-    // drawing them out from one end along their length (drawOut), so the corners never squash.
+    // Ribbon bands wrap round the lid's rounded edges and tuck under it, so once the bow is untied
+    // they stay on the lid, go slack (loosenBand) and leave with it.
+    // The bands lie flat on the lid, which the camera sees at ~6° once the box squares up. At that
+    // angle a glossy band mirrors the white room as a white line, so their gloss comes from the
+    // magenta sheen instead of specular, the way satin catches light at a low angle
+    const bandMat = ribbonMat.clone();
+    bandMat.roughness = 0.55;
+    bandMat.specularIntensity = 0.1;
+    bandMat.envMapIntensity = 0.2;
+    bandMat.sheen = 0.45;
+    this.disposables.push(bandMat);
     const makeBand = (lift: number) => {
       const path: THREE.Vector3[] = [];
       for (const pt of lidWrapPath(LW, LID_H, 0.035, lift)) {
         const prev = path[path.length - 1];
-        // Even 2 cm steps, so the drawn-out end travels smoothly
+        // Even 2 cm steps, so the slack curve is smooth
         const n = prev ? Math.ceil(prev.distanceTo(pt) / 0.02) : 1;
         for (let i = 1; i <= n; i++) path.push(prev ? prev.clone().lerp(pt, i / n) : pt);
       }
-      return mesh(ribbonStripGeometry(path, path.map(() => new THREE.Vector3(0, 0, 1)), RIBBON), ribbonMat);
+      const band = mesh(ribbonStripGeometry(path, path.map(() => new THREE.Vector3(0, 0, 1)), RIBBON), bandMat);
+      band.geometry.userData.rest = (band.geometry.attributes.position.array as Float32Array).slice();
+      return band;
     };
     this.bandX = makeBand(0.003);
     this.bandZ = makeBand(0.006); // lies over the X band where they cross
@@ -612,11 +673,13 @@ export class GiftBoxScene {
       this.bow.add(tail);
     }
     this.knot = mesh(infinityKnotGeometry(KNOT_SIZE.w, KNOT_SIZE.h, RIBBON * 0.8, 0.09), logoRibbonMat);
-    this.knot.position.y = KNOT_SIZE.h * 0.5 - 0.02; // loops rest on the ribbon
-    const tilt = new THREE.Group(); // leans back like a tied bow settling, half-turned toward the hero camera
-    tilt.rotation.set(-0.3, 0.3, 0, "YXZ");
-    tilt.add(this.knot);
-    this.bow.add(tilt);
+    // The wrap binds the crossing, seated on the ribbon crossing; the loops rise from it along the
+    // X band, so the bow lines up with the ribbon it's tied from
+    this.wrap = mesh(knotWrapGeometry(0.15, 0.1, 0.135), ribbonMat);
+    this.knotTilt.position.y = 0.1; // crossing at the wrap's centre, the wrap resting on the bands
+    this.knotTilt.rotation.x = -0.22; // leans back a little, like a tied bow settling
+    this.knotTilt.add(this.knot, this.wrap);
+    this.bow.add(this.knotTilt);
     this.bow.position.y = LID_H + 0.014;
     this.lid.add(this.bow);
 
@@ -669,32 +732,40 @@ export class GiftBoxScene {
     const idle = (1 - span(p, 0, 0.06)) * (this.opts.idle ? 1 : 0);
     const bob = Math.sin(this.time * 1.1) * 0.035 * idle;
 
-    // 1 · Untie (0.04 → 0.34): the knot comes undone — one loop turns over through the crossing and
-    // the waist falls open into a single loose loop, which lies down and slips off the back of the
-    // lid with the tails while the bands are drawn out from under it
-    const flip = easeInOut(span(p, 0.04, 0.14));
-    const slack = easeInOut(span(p, 0.09, 0.19));
-    if (flip !== this.knotPose.flip || slack !== this.knotPose.slack) {
-      poseKnot(this.knot.geometry, flip, slack);
-      this.knotPose = { flip, slack };
+    // 1 · Untie (0.08 → 0.37, under the "Untie the knot." caption), the way a bow comes undone when
+    // its tail is pulled: a tug, the right loop slips back through the knot, then the left; the wrap
+    // unwinds, the tails draw in, and the bands go slack on the lid.
+    const tug = Math.sin(Math.PI * span(p, 0.08, 0.16));
+    const right = 1 - easeInOut(span(p, 0.1, 0.22));
+    const left = 1 - easeInOut(span(p, 0.15, 0.27));
+    // Drawn right through, a loop is just a fold of band inside the wrap
+    const pull = { left: Math.max(0.04, left), right: Math.max(0.04, right) };
+    if (pull.left !== this.knotPull.left || pull.right !== this.knotPull.right) {
+      writeKnot(this.knot.geometry, pull.left, pull.right);
+      this.knotPull = pull;
     }
-    const lie = easeInOut(span(p, 0.15, 0.23));
-    this.knot.rotation.x = -lie * (Math.PI / 2 - 0.3); // with the tilt's lean, flat on the lid
-    this.knot.position.y = lerp(KNOT_SIZE.h * 0.5 - 0.02, 0.01, lie);
-    // Loosened, the tails fall open to the sides
-    this.tails.forEach((t, i) => (t.rotation.y = (i ? 1 : -1) * (TAIL_SPREAD + slack * 0.5)));
-    // Dragged slowly at first, then sliding: back over the edge, tipping down out of sight behind the box
-    const travel = easeIn(span(p, 0.19, 0.31)) * 2.2;
-    const past = Math.max(0, travel - (W / 2 + LID_OVER));
-    this.bow.position.set(0, LID_H + 0.014 - past * 1.1, -travel);
-    this.bow.rotation.x = -Math.min(1, past * 2.5) * 1.1;
-    this.bow.visible = travel < 2.2;
-    drawOut(this.bandX, easeInOut(span(p, 0.14, 0.3)));
-    drawOut(this.bandZ, easeInOut(span(p, 0.18, 0.34))); // its free end runs off the back, after the knot
+    // The tug lifts the knot a touch and leans it toward the pulled tail
+    this.knotTilt.position.y = 0.1 + tug * 0.03;
+    this.knotTilt.rotation.z = -tug * 0.07;
+    const unwind = easeInOut(span(p, 0.25, 0.31));
+    drawOut(this.wrap, unwind);
+    this.knot.visible = unwind < 0.5; // the last fold of the loops goes with the wrap
+    // The pulled (right) tail slides out as its loop comes through; once the knot is free both
+    // tails go slack and draw back in toward the crossing
+    const slackTails = easeInOut(span(p, 0.26, 0.34));
+    this.tails[1].position.set(Math.sin(TAIL_SPREAD), 0, Math.cos(TAIL_SPREAD)).multiplyScalar(0.28 * (1 - right) * (1 - slackTails));
+    this.tails.forEach((t) => drawIn(t, slackTails));
+    // Untied, the bands go slack across the top; they're wrapped round the lid, so they leave with it
+    const slackBands = easeInOut(span(p, 0.28, 0.37));
+    if (slackBands !== this.bandSlack) {
+      loosenBand(this.bandX.geometry, slackBands, 0.01);
+      loosenBand(this.bandZ.geometry, slackBands, 0.016); // stays over the X band where they cross
+      this.bandSlack = slackBands;
+    }
 
     // 2 · Lift the lid (0.32 → 0.62): straight up, then tip back and away
-    const lift = easeInOut(span(p, 0.32, 0.5));
-    const away = easeInOut(span(p, 0.46, 0.66));
+    const lift = easeInOut(span(p, 0.36, 0.52));
+    const away = easeInOut(span(p, 0.48, 0.66));
     this.lid.position.set(0, H - LID_H * 0.72 + lift * 1.1 + away * 3.2, -away * 2.6);
     this.lid.rotation.x = -lift * 0.18 - away * 0.9;
     this.lid.rotation.z = away * 0.12;
