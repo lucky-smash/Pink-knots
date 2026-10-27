@@ -1,23 +1,26 @@
 // Static gift box used before WebGL is ready, when WebGL is unavailable,
 // and on low-power devices. Same palette and proportions as the 3D box.
+import logoRibbon from "@/data/logo-ribbon.json";
 
-// The logo's infinity knot on the lid, the same lemniscate as giftBoxScene's infinityKnotGeometry.
-// It's drawn as two halves that meet at the loop tips: the over half (magenta, running "\" through
-// the centre) is laid on top of the under half (green, running "/").
-const KNOT = { cx: 210, cy: 118, w: 150, h: 58 };
-function knotHalf(over: boolean) {
-  const pts: string[] = [];
-  for (let i = 0; i <= 64; i++) {
-    const t = (over ? 0 : Math.PI) + (i / 64) * Math.PI;
-    const s = Math.sin(t);
-    const c = Math.cos(t);
-    const den = 1 + s * s;
-    pts.push(`${(KNOT.cx + ((KNOT.w / 2) * c) / den).toFixed(1)} ${(KNOT.cy + (KNOT.h * 1.42 * s * c) / den).toFixed(1)}`);
-  }
-  return `M${pts.join("L")}`;
-}
-const KNOT_UNDER_HALF = knotHalf(false);
-const KNOT_OVER_HALF = knotHalf(true);
+// The logo's infinity ribbon on the lid, drawn from the same measurements as the 3D knot
+// (src/data/logo-ribbon.json): short quads along its centre line, each in the logo's colour there.
+// The strand passing under the crossing is drawn first and the over strand's stretch last.
+const KNOT = { cx: 210, base: 150, w: 170 };
+const KNOT_QUADS = (() => {
+  const { points, widths, colours, crossing } = logoRibbon;
+  const minY = Math.min(...points.map(([, y], i) => y - widths[i] / 2));
+  const at = ([x, y]: number[]) => [KNOT.cx + x * KNOT.w, KNOT.base - (y - minY) * KNOT.w];
+  const quads = points.slice(0, -1).map((p, i) => {
+    const [ax, ay] = at(p);
+    const [bx, by] = at(points[i + 1]);
+    const l = Math.hypot(bx - ax, by - ay) || 1;
+    const [nx, ny] = [-(by - ay) / l, (bx - ax) / l];
+    const [ha, hb] = [(widths[i] * KNOT.w) / 2, (widths[i + 1] * KNOT.w) / 2];
+    const pts = [[ax + nx * ha, ay + ny * ha], [bx + nx * hb, by + ny * hb], [bx - nx * hb, by - ny * hb], [ax - nx * ha, ay - ny * ha]];
+    return { d: `M${pts.map((q) => q.map((v) => v.toFixed(1)).join(" ")).join("L")}Z`, colour: colours[i], over: Math.abs(i - crossing[0]) <= 10 };
+  });
+  return [...quads.filter((q) => !q.over), ...quads.filter((q) => q.over)];
+})();
 
 export function GiftBoxIllustration({ className = "" }: { className?: string }) {
   return (
@@ -40,21 +43,6 @@ export function GiftBoxIllustration({ className = "" }: { className?: string }) 
           <stop offset="0.5" stopColor="#c42aa8" />
           <stop offset="1" stopColor="#8a1586" />
         </linearGradient>
-        {/* The logo ribbon, left to right: indigo tips, green under strand, magenta over strand */}
-        <linearGradient id="gbi-knot-under" gradientUnits="userSpaceOnUse" x1="135" x2="285" y1="0" y2="0">
-          <stop offset="0" stopColor="#13106d" />
-          <stop offset="0.22" stopColor="#4aa538" />
-          <stop offset="0.5" stopColor="#80e63e" />
-          <stop offset="0.75" stopColor="#e9ff79" />
-          <stop offset="1" stopColor="#13106d" />
-        </linearGradient>
-        <linearGradient id="gbi-knot-over" gradientUnits="userSpaceOnUse" x1="135" x2="285" y1="0" y2="0">
-          <stop offset="0" stopColor="#13106d" />
-          <stop offset="0.2" stopColor="#58167d" />
-          <stop offset="0.5" stopColor="#e73ac6" />
-          <stop offset="0.78" stopColor="#b2209a" />
-          <stop offset="1" stopColor="#58167d" />
-        </linearGradient>
       </defs>
       <ellipse cx="210" cy="352" rx="170" ry="26" fill="url(#gbi-shadow)" />
       {/* base */}
@@ -71,12 +59,11 @@ export function GiftBoxIllustration({ className = "" }: { className?: string }) 
       <path d="M262 185.5 L286 177 L286 219 L262 227.5 Z M262 280 L286 271 L286 321.5 L262 330 Z" fill="#8a1586" />
       <path d="M134 219 L158 227.5 L158 280 L134 271 Z" fill="#a41d8e" />
       <path d="M262 227.5 L286 219 L286 271 L262 280 Z" fill="#8a1586" />
-      {/* bow: the logo's infinity knot, standing on the ribbon crossing */}
-      <g fill="none" strokeWidth="11">
-        <path d={KNOT_UNDER_HALF} stroke="url(#gbi-knot-under)" />
-        {/* a soft shadow where the over strand crosses */}
-        <path d={KNOT_OVER_HALF} stroke="#210f31" strokeOpacity="0.3" strokeWidth="15" pathLength={100} strokeDasharray="0 41 18 100" />
-        <path d={KNOT_OVER_HALF} stroke="url(#gbi-knot-over)" />
+      {/* the logo's infinity ribbon, standing on the ribbon crossing */}
+      <g>
+        {KNOT_QUADS.map((q, i) => (
+          <path key={i} d={q.d} fill={q.colour} stroke={q.colour} strokeWidth="0.6" />
+        ))}
       </g>
     </svg>
   );

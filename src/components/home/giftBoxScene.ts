@@ -6,6 +6,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { KNOT_CUT, KNOT_OVER, KNOT_UNDER, KNOT_VIEWBOX } from "@/components/knotPaths";
 import { CARD_PRINT, HANDOFF, drawCard, finalCardFraction } from "./heroCard";
+import logoRibbon from "@/data/logo-ribbon.json";
 
 // Logo magenta (#B2209A), pre-darkened so it lands on that colour after lighting and ACES tone mapping
 const KNOT_LIT = 0x7d0c6b;
@@ -20,7 +21,7 @@ const WALL = 0.07;
 const LID_H = 0.42;
 const LID_OVER = 0.05; // lid overhang on each side
 const RIBBON = 0.3;
-const KNOT_SIZE = { w: 1.25, h: 0.5 }; // the logo knot on the lid
+const KNOT_W = 1.45; // the logo knot on the lid, end to end
 const TAIL_SPREAD = 0.95; // the bow tails, radians either side of the box front
 const CARD_W = 1.2;
 // End of the dive: camera just under the rim, looking down at the card on the liner floor
@@ -248,132 +249,79 @@ function lidWrapPath(lidW: number, lidH: number, r: number, lift: number) {
   return pts;
 }
 
-// The logo's ribbon colours along the knot, from the over strand (f = 1) to the under strand
-// (f = 0): magenta through violet to indigo at the loop tips, then green to lime. Pre-darkened
-// like KNOT_LIT so they land on the logo colours after lighting and tone mapping.
-const LOGO_RIBBON: [number, number][] = [
-  [0, 0x9cd83c], // lime highlight
-  [0.28, 0x3f9a24], // ribbon green
-  [0.44, 0x1a1460], // indigo tips
-  [0.56, 0x45105f], // violet
-  [0.78, 0x7d0c6b], // magenta
-  [1, 0x940f80], // the over strand's bright magenta
-];
-
-function logoRibbonColor(f: number, out: THREE.Color) {
-  let i = 1;
-  while (i < LOGO_RIBBON.length - 1 && LOGO_RIBBON[i][0] < f) i++;
-  const [f0, c0] = LOGO_RIBBON[i - 1];
-  const [f1, c1] = LOGO_RIBBON[i];
-  return out.lerpColors(new THREE.Color(c0), new THREE.Color(c1), clamp01((f - f0) / (f1 - f0)));
-}
-
 /**
- * The logo's infinity knot tied as a bow: a satin band round a lemniscate, passing in front of
- * itself at the crossing (the logo's magenta "\" strand over the green one), twisting toward
- * edge-on at the loop tips where the logo ribbon thins. Shaped like bow loops: the crossing sits
- * low in the knot wrap and each loop rises up and out from it, its lower edge resting near the
- * lid. Crossing at the origin, loops along ±X, faces +Z.
- *
- * `writeKnot` re-lays the band for a pull: `left`/`right` (1 → 0) are how far each loop has
- * slipped back through the knot. The band is rebuilt along the smaller loop rather than bent, so
- * it keeps its width, twist and satin at every pose and never tears or folds through itself.
+ * The logo's infinity ribbon in 3D, from src/data/logo-ribbon.json (scripts/measure-logo-ribbon.mjs):
+ * the logo's own centre line, end to end, at `size` wide. The band keeps one width; where the logo
+ * draws it thin it's turned toward edge-on, so face-on it reads as the logo and from an angle it's
+ * a twisting satin ribbon. The strands part in depth at the crossing, magenta in front. Faces +Z,
+ * its lowest edge at y = 0. Colours are set by colourKnot.
  */
-const KNOT_SEGS = 260;
-
-function knotPoint(t: number, width: number, height: number, depth: number, left: number, right: number, out: THREE.Vector3) {
-  const s = Math.sin(t);
-  const c = Math.cos(t);
-  const den = 1 + s * s;
-  const x = ((width / 2) * c) / den;
-  // y is flipped so the over strand (s = 1) runs top-left to bottom-right, like the logo
-  const y0 = (-height * 1.42 * s * c) / den;
-  // Lower edges flattened toward the crossing (smoothly, so the loop tips stay round), loops lifted
-  const y = y0 * (0.7 + 0.3 * Math.tanh(y0 / 0.05)) + height * 0.3 * Math.abs((2 * x) / width) ** 1.4;
-  // Each side shrinks toward the crossing by its own pull, blended across the middle
-  const w = clamp01((x + 0.06) / 0.12);
-  const k = lerp(left, right, w * w * (3 - 2 * w));
-  // Height goes a little slower than width, so a loop rounds up as it's drawn through
-  return out.set(x * k, y * Math.pow(k, 0.8), depth * s);
-}
-
-function writeKnot(g: THREE.BufferGeometry, left: number, right: number) {
-  const { width, height, band, depth } = g.userData as { width: number; height: number; band: number; depth: number };
-  const pos = g.attributes.position as THREE.BufferAttribute;
-  const uv = g.attributes.uv as THREE.BufferAttribute;
-  const p = new THREE.Vector3();
-  const a = new THREE.Vector3();
-  const b = new THREE.Vector3();
+function logoKnotGeometry(size: number, depth: number) {
+  const { points, widths, crossing } = logoRibbon;
+  const n = points.length;
+  const full = Math.max(...widths) * size;
+  const bump = (d: number) => Math.exp(-((d / 7) ** 2));
+  const centre = points.map(([x, y], i) => new THREE.Vector3(x * size, y * size, depth * (bump(i - crossing[0]) - bump(i - crossing[1]))));
   const z = new THREE.Vector3(0, 0, 1);
-  const prev = new THREE.Vector3();
-  let length = 0;
-  for (let i = 0; i <= KNOT_SEGS; i++) {
-    const t = (i / KNOT_SEGS) * Math.PI * 2;
-    const s = Math.sin(t);
-    knotPoint(t, width, height, depth, left, right, p);
-    if (i) length += p.distanceTo(prev);
-    prev.copy(p);
-    const tangent = knotPoint(t + 0.001, width, height, depth, left, right, a).sub(knotPoint(t - 0.001, width, height, depth, left, right, b)).normalize();
-    const normal = new THREE.Vector3(-tangent.y, tangent.x, 0).normalize();
-    const twist = 1.05 * Math.cos(t) ** 2;
-    const across = normal.multiplyScalar(Math.cos(twist)).addScaledVector(z, Math.sin(twist));
-    const half = (band / 2) * (0.82 + 0.18 * s);
-    pos.setXYZ(i * 2, p.x - across.x * half, p.y - across.y * half, p.z - across.z * half);
-    pos.setXYZ(i * 2 + 1, p.x + across.x * half, p.y + across.y * half, p.z + across.z * half);
-    uv.setXY(i * 2, length / SATIN_TILE, 0);
-    uv.setXY(i * 2 + 1, length / SATIN_TILE, 1);
-  }
-  pos.needsUpdate = true;
-  uv.needsUpdate = true;
-  g.computeVertexNormals();
-  g.computeBoundingSphere();
-}
-
-function infinityKnotGeometry(width: number, height: number, band: number, depth: number) {
-  const n = (KNOT_SEGS + 1) * 2;
-  const colors: number[] = [];
+  const positions: number[] = [];
+  const uvs: number[] = [];
   const index: number[] = [];
-  const col = new THREE.Color();
-  for (let i = 0; i <= KNOT_SEGS; i++) {
-    logoRibbonColor((1 + Math.sin((i / KNOT_SEGS) * Math.PI * 2)) / 2, col);
-    colors.push(col.r, col.g, col.b, col.r, col.g, col.b);
-    if (i < KNOT_SEGS) {
-      const a = i * 2;
-      index.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
-    }
+  let length = 0;
+  let minY = Infinity;
+  for (let i = 0; i < n; i++) {
+    if (i) length += centre[i].distanceTo(centre[i - 1]);
+    const tangent = centre[Math.min(n - 1, i + 1)].clone().sub(centre[Math.max(0, i - 1)]).normalize();
+    const flat = new THREE.Vector3(-tangent.y, tangent.x, 0).normalize();
+    // The last few samples at each end are the logo's tips: narrowed to a point, not turned
+    const tip = Math.min(1, i / 7, (n - 1 - i) / 7);
+    const w = widths[i] * size;
+    const turn = Math.acos(Math.min(1, Math.max(0.16, w / full))) * tip;
+    const half = (tip < 1 ? w * (0.15 + 0.85 * tip * tip) : full) / 2;
+    const across = flat.multiplyScalar(Math.cos(turn)).addScaledVector(z, Math.sin(turn));
+    const a = centre[i].clone().addScaledVector(across, -half);
+    const b = centre[i].clone().addScaledVector(across, half);
+    minY = Math.min(minY, a.y, b.y);
+    positions.push(...a.toArray(), ...b.toArray());
+    uvs.push(length / SATIN_TILE, 0, length / SATIN_TILE, 1);
+    if (i < n - 1) index.push(i * 2, i * 2 + 2, i * 2 + 1, i * 2 + 1, i * 2 + 2, i * 2 + 3);
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(n * 3), 3));
-  g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
-  g.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(n * 6), 3));
   g.setIndex(index);
-  g.userData = { width, height, band, depth };
-  writeKnot(g, 1, 1);
+  g.translate(0, -minY, 0);
+  g.computeVertexNormals();
+  colourKnot(g, 0);
   return g;
 }
 
-/**
- * The knot wrap: a short length of ribbon bound round the crossing, as in a tied bow. An ellipse
- * round the X axis, sized to enclose both strands (they cross at z = ±depth).
- */
-function knotWrapGeometry(width: number, ry: number, rz: number) {
-  const centre: THREE.Vector3[] = [];
-  const across: THREE.Vector3[] = [];
-  // Starts at the back and overlaps itself a little, so unwinding it reads front-last
-  for (let i = 0; i <= 52; i++) {
-    const a = Math.PI + (i / 48) * Math.PI * 2;
-    centre.push(new THREE.Vector3(0, ry * Math.sin(a), rz * Math.cos(a)));
-    across.push(new THREE.Vector3(1, 0, 0));
-  }
-  return ribbonStripGeometry(centre, across, width);
+// The logo's gradient as one loop of colour: end to end along the ribbon (indigo → magenta → indigo
+// → green → lime), then a short blend from lime back to indigo, so it can flow round without a seam.
+// Pre-darkened (in linear light) like KNOT_LIT, so it lands on the logo's colours once lit.
+const KNOT_COLOURS = logoRibbon.colours.map((hex) => new THREE.Color(hex).multiplyScalar(0.42));
+const LOGO_SPAN = 0.86; // share of the colour loop the logo's own gradient takes
+
+function knotColourAt(s: number, out: THREE.Color) {
+  const n = KNOT_COLOURS.length;
+  s = ((s % 1) + 1) % 1;
+  if (s >= LOGO_SPAN) return out.lerpColors(KNOT_COLOURS[n - 1], KNOT_COLOURS[0], (s - LOGO_SPAN) / (1 - LOGO_SPAN));
+  const f = (s / LOGO_SPAN) * (n - 1);
+  const i = Math.min(n - 2, Math.floor(f));
+  return out.lerpColors(KNOT_COLOURS[i], KNOT_COLOURS[i + 1], f - i);
 }
 
-/** Shows a ribbon strip drawn out from its start by `t` of its length, a whole segment at a time. */
-function drawOut(m: THREE.Mesh, t: number) {
-  const total = m.geometry.index!.count;
-  const cut = Math.round((t * total) / 12) * 12; // ribbonStripGeometry: 12 indices per segment
-  m.geometry.setDrawRange(cut, total - cut);
-  m.visible = cut < total;
+/** Lays the colour loop along the ribbon, moved on by `flow` (0 = exactly the logo; 1 = a full turn). */
+function colourKnot(g: THREE.BufferGeometry, flow: number) {
+  const col = g.attributes.color as THREE.BufferAttribute;
+  const n = col.count / 2;
+  const c = new THREE.Color();
+  for (let i = 0; i < n; i++) {
+    knotColourAt((i / (n - 1)) * LOGO_SPAN - flow, c);
+    col.setXYZ(i * 2, c.r, c.g, c.b);
+    col.setXYZ(i * 2 + 1, c.r, c.g, c.b);
+  }
+  col.needsUpdate = true;
 }
 
 /**
@@ -394,14 +342,6 @@ function loosenBand(g: THREE.BufferGeometry, t: number, rise: number) {
   }
   pos.needsUpdate = true;
   g.computeVertexNormals();
-}
-
-/** The reverse: the strip's far end drawn back toward its start by `t` of its length. */
-function drawIn(m: THREE.Mesh, t: number) {
-  const total = m.geometry.index!.count;
-  const cut = Math.round((t * total) / 12) * 12;
-  m.geometry.setDrawRange(0, total - cut);
-  m.visible = cut < total;
 }
 
 /** A soft radial contact shadow — cheaper and softer than a shadow map on the floor. */
@@ -427,9 +367,9 @@ export class GiftBoxScene {
   private bow = new THREE.Group();
   private knot: THREE.Mesh;
   private knotTilt = new THREE.Group();
-  private wrap: THREE.Mesh;
   private tails: THREE.Mesh[] = [];
-  private knotPull = { left: 1, right: 1 };
+  private knotFlow = 0;
+  private knotMats: THREE.Material[] = [];
   private bandX: THREE.Mesh;
   private bandZ: THREE.Mesh;
   private bandSlack = -1;
@@ -631,12 +571,13 @@ export class GiftBoxScene {
     bands.add(bz);
     this.lid.add(bands);
 
-    // Bow: the logo's infinity knot, standing on the ribbon crossing, over two dovetailed tails
-    // Softer anisotropy and weave than the bands: where the knot twists edge-on at the loop tips,
-    // full-strength satin glares white and swallows the logo's indigo
+    // Bow: the logo's infinity ribbon, standing on the ribbon crossing, over two dovetailed tails.
+    // Softer anisotropy and weave than the bands: where the ribbon turns edge-on, full-strength
+    // satin glares white and swallows the logo's indigo. Transparent (still depth-writing) so it can fade.
     const logoRibbonMat = new THREE.MeshPhysicalMaterial({
       ...satinFinish,
       vertexColors: true,
+      transparent: true,
       roughness: 0.42,
       anisotropy: 0.35,
       bumpScale: 0.12,
@@ -653,7 +594,9 @@ export class GiftBoxScene {
     tailMat.anisotropy = 0.3;
     tailMat.sheen = 0;
     tailMat.specularIntensity = 0.4;
+    tailMat.transparent = true;
     this.disposables.push(tailMat);
+    this.knotMats.push(logoRibbonMat, tailMat);
     const TAIL = 0.85;
     for (const side of [-1, 1]) {
       const centre: THREE.Vector3[] = [];
@@ -672,13 +615,13 @@ export class GiftBoxScene {
       this.tails.push(tail);
       this.bow.add(tail);
     }
-    this.knot = mesh(infinityKnotGeometry(KNOT_SIZE.w, KNOT_SIZE.h, RIBBON * 0.8, 0.09), logoRibbonMat);
-    // The wrap binds the crossing, seated on the ribbon crossing; the loops rise from it along the
-    // X band, so the bow lines up with the ribbon it's tied from
-    this.wrap = mesh(knotWrapGeometry(0.15, 0.1, 0.135), ribbonMat);
-    this.knotTilt.position.y = 0.1; // crossing at the wrap's centre, the wrap resting on the bands
-    this.knotTilt.rotation.x = -0.22; // leans back a little, like a tied bow settling
-    this.knotTilt.add(this.knot, this.wrap);
+    // Stands on the ribbon crossing, its lowest edge resting on the board, almost upright: leaning
+    // further back tips the lower loops up into the key light, which washes the green out and
+    // squashes the shape. Turned partway toward the hero camera (the box starts turned 0.62 away),
+    // so it presents as the logo rather than side-on.
+    this.knot = mesh(logoKnotGeometry(KNOT_W, 0.07), logoRibbonMat);
+    this.knotTilt.rotation.set(-0.06, 0.4, 0, "YXZ");
+    this.knotTilt.add(this.knot);
     this.bow.add(this.knotTilt);
     this.bow.position.y = LID_H + 0.014;
     this.lid.add(this.bow);
@@ -732,29 +675,20 @@ export class GiftBoxScene {
     const idle = (1 - span(p, 0, 0.06)) * (this.opts.idle ? 1 : 0);
     const bob = Math.sin(this.time * 1.1) * 0.035 * idle;
 
-    // 1 · Untie (0.08 → 0.37, under the "Untie the knot." caption), the way a bow comes undone when
-    // its tail is pulled: a tug, the right loop slips back through the knot, then the left; the wrap
-    // unwinds, the tails draw in, and the bands go slack on the lid.
-    const tug = Math.sin(Math.PI * span(p, 0.08, 0.16));
-    const right = 1 - easeInOut(span(p, 0.1, 0.22));
-    const left = 1 - easeInOut(span(p, 0.15, 0.27));
-    // Drawn right through, a loop is just a fold of band inside the wrap
-    const pull = { left: Math.max(0.04, left), right: Math.max(0.04, right) };
-    if (pull.left !== this.knotPull.left || pull.right !== this.knotPull.right) {
-      writeKnot(this.knot.geometry, pull.left, pull.right);
-      this.knotPull = pull;
+    // 1 · The knot (0.02 → 0.3): as the visitor scrolls, the logo's colours flow along the ribbon
+    // once round and settle back on the logo, then the knot and its tails fade, drifting up a little
+    const flow = easeInOut(span(p, 0.02, 0.26));
+    if (flow !== this.knotFlow) {
+      colourKnot(this.knot.geometry, flow);
+      this.knotFlow = flow;
     }
-    // The tug lifts the knot a touch and leans it toward the pulled tail
-    this.knotTilt.position.y = 0.1 + tug * 0.03;
-    this.knotTilt.rotation.z = -tug * 0.07;
-    const unwind = easeInOut(span(p, 0.25, 0.31));
-    drawOut(this.wrap, unwind);
-    this.knot.visible = unwind < 0.5; // the last fold of the loops goes with the wrap
-    // The pulled (right) tail slides out as its loop comes through; once the knot is free both
-    // tails go slack and draw back in toward the crossing
-    const slackTails = easeInOut(span(p, 0.26, 0.34));
-    this.tails[1].position.set(Math.sin(TAIL_SPREAD), 0, Math.cos(TAIL_SPREAD)).multiplyScalar(0.28 * (1 - right) * (1 - slackTails));
-    this.tails.forEach((t) => drawIn(t, slackTails));
+    const fade = easeInOut(span(p, 0.2, 0.3));
+    this.knotMats.forEach((m) => (m.opacity = 1 - fade));
+    this.knotTilt.position.y = fade * 0.08;
+    this.bow.visible = fade < 1;
+    // Shadows can't fade, so they go at half way
+    this.knot.castShadow = fade < 0.5;
+    this.tails.forEach((t) => (t.castShadow = fade < 0.5));
     // Untied, the bands go slack across the top; they're wrapped round the lid, so they leave with it
     const slackBands = easeInOut(span(p, 0.28, 0.37));
     if (slackBands !== this.bandSlack) {
