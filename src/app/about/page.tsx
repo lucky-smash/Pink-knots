@@ -39,7 +39,7 @@ export default function AboutPage() {
     <>
       <PageIntro
         eyebrow={`Since ${site.founded}`}
-        title={<>We make the part of the gift <span className="accent text-knot">people see first.</span></>}
+        title={<>We make the part of the gift <span className="accent text-leaf-dark">people see first.</span></>}
         crumbs={[{ href: "/", label: "Home" }, { href: "/about", label: "About" }]}
       >
         Pink Knots is a custom gift-packaging maker in Jungpura, New Delhi, founded by {site.founder}. We design and make wooden and MDF
@@ -61,7 +61,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section aria-labelledby="house-title" className="border-y border-line bg-paper">
+      <section aria-labelledby="house-title" className="knots-lilac border-y border-line bg-lilac">
         <div className="container-page grid gap-12 py-16 md:py-24 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <p className="eyebrow">Under one roof</p>
@@ -97,7 +97,7 @@ export default function AboutPage() {
         </Reveal>
       </section>
 
-      <section aria-labelledby="credentials-title" className="bg-ink text-paper">
+      <section aria-labelledby="credentials-title" className="surface-dark knots-ink bg-ink text-paper">
         <div className="container-page grid gap-12 py-16 md:py-24 lg:grid-cols-2">
           <Reveal>
             <p className="eyebrow eyebrow-on-dark">What we hold ourselves to</p>
@@ -105,7 +105,7 @@ export default function AboutPage() {
             <ul className="mt-8 space-y-3">
               {PRINCIPLES.map((p) => (
                 <li key={p} className="flex items-center gap-3 text-lg text-paper/85">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-knot" aria-hidden="true" /> {p}
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-leaf" aria-hidden="true" /> {p}
                 </li>
               ))}
             </ul>

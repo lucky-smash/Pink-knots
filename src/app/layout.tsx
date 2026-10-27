@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist, Instrument_Serif } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { KnotsAlign } from "@/components/KnotsAlign";
 import { QuoteProvider } from "@/components/quote/QuoteProvider";
 import { collections, productsInCollection } from "@/lib/catalogue";
 import { site } from "@/lib/site";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: { siteName: site.name, type: "website", locale: "en_IN" },
 };
 
-export const viewport: Viewport = { themeColor: "#f6f1e9" };
+export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const navCollections = collections.map((c) => ({
@@ -33,9 +34,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <QuoteProvider>
           <SiteHeader collections={navCollections} />
-          <main id="main">{children}</main>
+          <main id="main" className="knots-paper">{children}</main>
           <SiteFooter />
         </QuoteProvider>
+        <KnotsAlign />
       </body>
     </html>
   );

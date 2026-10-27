@@ -21,7 +21,7 @@ export function VideoEmbed({ id, title }: { id: string; title: string }) {
       ) : (
         <button type="button" onClick={() => setPlaying(true)} className="group absolute inset-0 flex flex-col items-center justify-center gap-5 text-paper">
           <KnotMark className="absolute top-6 left-6 h-8 w-8" color="var(--color-paper)" />
-          <span className="grid h-20 w-20 place-items-center rounded-full bg-knot shadow-[0_16px_40px_-12px_rgb(200_42_15/0.8)] transition-transform duration-[var(--duration-base)] ease-[var(--ease-out-soft)] group-hover:scale-110">
+          <span className="grid h-20 w-20 place-items-center rounded-full bg-knot shadow-[0_16px_40px_-12px_rgb(178_32_154/0.8)] transition-transform duration-[var(--duration-base)] ease-[var(--ease-out-soft)] group-hover:scale-110">
             <Play size={30} className="translate-x-0.5" />
           </span>
           <span className="font-display text-xl font-semibold tracking-[-0.015em]">{title}</span>

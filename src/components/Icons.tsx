@@ -50,3 +50,6 @@ export const Play = ({ size, ...p }: IconProps) => (
 export const Gift = ({ size, ...p }: IconProps) => (
   <svg {...base(size)} {...p}><rect x="3.5" y="8" width="17" height="4" rx="1" /><path d="M5 12v8h14v-8M12 8v12M12 8c-1.5-3-5-4-5.5-1.8C6 8 9 8 12 8zm0 0c1.5-3 5-4 5.5-1.8C18 8 15 8 12 8z" /></svg>
 );
+export const Alert = ({ size, ...p }: IconProps) => (
+  <svg {...base(size)} {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7.5v5.5M12 16.5v.01" /></svg>
+);

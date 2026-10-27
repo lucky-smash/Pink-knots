@@ -70,8 +70,8 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
         el.inert = o < 0.5;
       });
       if (overlayRef.current) {
-        // By now the camera is inside the box and the frame is already red, so this
-        // only evens the lit liner out to flat Knot Red (red over red — nothing turns pink)
+        // By now the camera is inside the box and the frame is the magenta liner; this fades it
+        // out to the flat lilac the next section starts in
         const w = clamp01((p - HANDOFF) / (SETTLED - HANDOFF));
         const o = w * w * (3 - 2 * w);
         overlayRef.current.style.opacity = String(o);
@@ -167,20 +167,21 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
     <section
       ref={sectionRef}
       aria-label="Introduction"
-      className={`relative bg-ivory ${isScroll ? "h-[260svh] md:h-[300svh]" : ""}`}
+      className={`relative bg-canvas ${isScroll ? "h-[260svh] md:h-[300svh]" : ""}`}
     >
       <div
         ref={stageRef}
-        className={`${isScroll ? "sticky top-16 md:top-[4.5rem]" : "relative"} h-[calc(100svh-4rem)] min-h-[34rem] overflow-hidden md:h-[calc(100svh-4.5rem)]`}
+        className={`${isScroll ? "sticky top-[var(--header-h)] md:top-[var(--header-h-md)]" : "relative"} h-[calc(100svh-var(--header-h))] min-h-[34rem] overflow-hidden [container-type:size] md:h-[calc(100svh-var(--header-h-md))]`}
       >
         {/* Warm studio backdrop */}
-        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(120%_80%_at_70%_35%,#fffdf9_0%,#f6f1e9_55%,#ece3d4_100%)]" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(120%_80%_at_70%_35%,#ffffff_0%,#fdf6fc_55%,#f4e4f0_100%)]" />
+        <div aria-hidden="true" data-knots-anchor="start" className="knots-paper absolute inset-0" />
 
         <div
           aria-hidden="true"
-          className={`absolute inset-x-0 top-[6%] bottom-[30%] flex items-center justify-center transition-opacity duration-700 md:inset-y-0 md:right-0 md:left-[38%] md:bottom-0 ${sceneReady ? "opacity-0" : "opacity-100"}`}
+          className={`absolute inset-x-0 top-[6%] bottom-[30%] flex items-center justify-center transition-opacity duration-700 md:[@container(min-aspect-ratio:9/10)]:inset-y-0 md:[@container(min-aspect-ratio:9/10)]:right-0 md:[@container(min-aspect-ratio:9/10)]:left-[38%] md:[@container(min-aspect-ratio:9/10)]:bottom-0 ${sceneReady ? "opacity-0" : "opacity-100"}`}
         >
-          <GiftBoxIllustration className="h-auto w-[min(78vw,26rem)] md:w-[min(40vw,30rem)]" />
+          <GiftBoxIllustration className="h-auto w-[min(78vw,26rem)] md:[@container(min-aspect-ratio:9/10)]:w-[min(40vw,30rem)]" />
         </div>
         <canvas
           ref={canvasRef}
@@ -188,15 +189,16 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
           className={`absolute inset-0 h-full w-full transition-opacity duration-700 ${sceneReady ? "opacity-100" : "opacity-0"}`}
         />
 
-        <div className="pointer-events-none relative z-10 container-page flex h-full items-end pb-10 md:items-center md:pb-0">
-          <div className="relative w-full max-w-[38rem] md:max-w-[34rem] lg:max-w-[38rem]">
+        {/* Copy sits under the box until the stage is landscape — the same aspect test the scene frames with */}
+        <div className="pointer-events-none relative z-10 container-page flex h-full items-end pb-10 md:[@container(min-aspect-ratio:9/10)]:items-center md:[@container(min-aspect-ratio:9/10)]:pb-0">
+          <div className="relative w-full max-w-[38rem] md:max-w-[30rem] xl:max-w-[34rem]">
             {/* Caption 1 — the hero */}
             <div ref={(el) => { captionRefs.current[0] = el; }} className="pointer-events-auto will-change-transform">
               <p className="eyebrow">Custom gift packaging · New Delhi · Since 2015</p>
               <h1 className="mt-5 text-hero font-bold text-ink">
-                The gift starts with the <span className="accent text-knot">box.</span>
+                The gift starts with the <span className="accent text-knot-light">box.</span>
               </h1>
-              <p className="mt-6 max-w-[30rem] text-[1.0625rem] leading-relaxed text-ink-soft md:text-lg">
+              <p className="mt-6 max-w-[30rem] text-lead text-ink-soft">
                 Wooden trays, printed boxes and hampers for weddings, festivals and corporate gifting — made to your size, logo and design.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
@@ -209,20 +211,20 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
 
             {isScroll && (
               <>
-                <div ref={(el) => { captionRefs.current[1] = el; }} className="absolute inset-x-0 bottom-0 opacity-0 md:top-1/2 md:bottom-auto md:-translate-y-1/2" style={{ visibility: "hidden" }}>
+                <div ref={(el) => { captionRefs.current[1] = el; }} className="absolute inset-x-0 bottom-0 opacity-0 md:[@container(min-aspect-ratio:9/10)]:top-1/2 md:[@container(min-aspect-ratio:9/10)]:bottom-auto md:[@container(min-aspect-ratio:9/10)]:-translate-y-1/2" style={{ visibility: "hidden" }}>
                   <p className="eyebrow">Made to order</p>
                   <p className="mt-4 font-display text-display font-bold text-ink">
-                    Untie the <span className="accent text-knot">knot.</span>
+                    Untie the <span className="accent text-knot-light">knot.</span>
                   </p>
                   <p className="mt-5 max-w-[26rem] text-lg leading-relaxed text-ink-soft">
                     Sized, printed and finished for your occasion — in wood, MDF, kraft board or leatherette.
                   </p>
                 </div>
-                <div ref={(el) => { captionRefs.current[2] = el; }} className="absolute inset-x-0 bottom-0 opacity-0 md:top-1/2 md:bottom-auto md:-translate-y-1/2" style={{ visibility: "hidden" }}>
+                <div ref={(el) => { captionRefs.current[2] = el; }} className="absolute inset-x-0 bottom-0 opacity-0 md:[@container(min-aspect-ratio:9/10)]:top-1/2 md:[@container(min-aspect-ratio:9/10)]:bottom-auto md:[@container(min-aspect-ratio:9/10)]:-translate-y-1/2" style={{ visibility: "hidden" }}>
                   <p className="eyebrow">Look inside</p>
                   <p className="mt-4 font-display text-display font-bold text-ink">
                     <span className="tabular-nums">{productCount}</span> designs.<br />
-                    <span className="accent text-knot">{collectionCount} collections.</span>
+                    <span className="accent text-leaf-dark">{collectionCount} collections.</span>
                   </p>
                 </div>
               </>
@@ -231,7 +233,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
         </div>
 
         {isScroll && (
-          <div ref={cueRef} className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-xs font-semibold tracking-[0.16em] text-stone uppercase md:flex" aria-hidden="true">
+          <div ref={cueRef} className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-xs font-semibold tracking-[0.16em] text-stone uppercase md:[@container(min-aspect-ratio:9/10)]:flex" aria-hidden="true">
             Scroll to open
             <span className="relative block h-10 w-px overflow-hidden bg-line-strong">
               <span className="absolute inset-x-0 top-0 h-1/2 animate-[cue_1.8s_var(--ease-in-out-soft)_infinite] bg-knot" />
@@ -239,8 +241,9 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
           </div>
         )}
 
-        {/* Settles to flat Knot Red once the camera is inside the box; the next section starts in the same red. */}
-        <div ref={overlayRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 bg-knot" style={{ opacity: 0 }} />
+        {/* Settles to flat lilac once the camera is inside the box; the next section starts in the same
+            lilac and knot tile. Anchoring the tile to the bottom edge carries its repeat across the seam. */}
+        <div ref={overlayRef} aria-hidden="true" data-knots-anchor="end" className="knots-lilac pointer-events-none absolute inset-0 z-20 bg-lilac" style={{ opacity: 0 }} />
         {isScroll && (
           <div
             ref={cardRef}
@@ -248,7 +251,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
             className="pointer-events-none absolute top-1/2 left-1/2 z-30 aspect-[8/5] -translate-x-1/2 -translate-y-1/2"
             style={{ visibility: "hidden" }}
           >
-            <div ref={cardShadowRef} className="absolute inset-0 shadow-[0_18px_40px_-12px_rgb(60_8_0/0.55)]" style={{ opacity: 0 }} />
+            <div ref={cardShadowRef} className="absolute inset-0 shadow-[0_18px_40px_-12px_rgb(50_0_45/0.55)]" style={{ opacity: 0 }} />
             {/* Drawn with the same routine as the scene's card texture */}
             <canvas ref={cardCanvasRef} width={1024} height={640} className="relative block h-full w-full" />
           </div>

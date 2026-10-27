@@ -1,12 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import { CollectionCard } from "@/components/CollectionCard";
 import { ArrowRight, Phone } from "@/components/Icons";
 import { ProductCard } from "@/components/ProductCard";
 import { Reveal } from "@/components/Reveal";
-import { EngravedKnot } from "@/components/EngravedKnot";
 import { GiftHero } from "@/components/home/GiftHero";
-import { cardImage, collections, featuredProducts, getProduct, products } from "@/lib/catalogue";
+import { ProductPhoto } from "@/components/ProductPhoto";
+import { cardImage, collections, featuredProducts, getProduct, isCutout, products } from "@/lib/catalogue";
 import { site } from "@/lib/site";
 
 // Material photos, chosen from the catalogue so each shows the real finish.
@@ -24,6 +23,23 @@ const STEPS = [
   { title: "Made and delivered", body: "Made to order in New Delhi — typically in two to three weeks, depending on the piece." },
 ];
 
+const STUDIO_FACTS = [
+  { k: "Making since", v: String(site.founded) },
+  { k: "Workshop", v: `${site.premises}, Jungpura` },
+  { k: "Team", v: site.team },
+  { k: "Catalogue", v: `${products.length} designs, all customisable` },
+  { k: "Minimum order", v: "Usually 50 pieces" },
+  { k: "Registered", v: site.certifications.join(" · ") },
+];
+
+// What we ask for on the first call, so the closing section can say it up front.
+const BRIEF = [
+  { k: "Quantity", v: "Roughly how many pieces" },
+  { k: "The piece", v: "A design from the catalogue, or a size and material" },
+  { k: "Branding", v: "Logo, names, colours or a print you have in mind" },
+  { k: "Date", v: "When it needs to reach you" },
+];
+
 export default function HomePage() {
   const featured = featuredProducts();
 
@@ -31,21 +47,18 @@ export default function HomePage() {
     <>
       <GiftHero productCount={products.length} collectionCount={collections.length} />
 
-      {/* Inside the box: begins in the same Knot Red the hero ends on */}
-      <section id="inside" aria-labelledby="inside-title" className="relative overflow-hidden bg-knot text-paper">
-        <EngravedKnot tone="knot" className="top-6 -right-[22%] w-[min(1150px,120vw)] md:-right-[8%]" />
-        <EngravedKnot tone="knot" flip="x" className="top-[46%] -left-[40%] w-[min(900px,110vw)] md:-left-[14%]" />
-        <EngravedKnot tone="knot" flip="y" className="-right-[10%] -bottom-[4%] hidden w-[min(560px,40vw)] lg:block" />
+      {/* Inside the box: begins in the same lilac the hero ends on */}
+      <section id="inside" aria-labelledby="inside-title" className="knots-lilac relative overflow-hidden bg-lilac">
         <div className="relative container-page pt-16 pb-20 md:pt-24 md:pb-28">
           <div className="grid gap-6 md:grid-cols-12 md:items-end">
             <Reveal className="md:col-span-7">
-              <p className="eyebrow eyebrow-on-dark">Inside every box</p>
+              <p className="eyebrow">Inside every box</p>
               <h2 id="inside-title" className="mt-4 text-display font-bold">
-                Six collections, <span className="accent">each made to order.</span>
+                Six collections, <span className="accent text-leaf-dark">each made to order.</span>
               </h2>
             </Reveal>
             <Reveal delay={120} className="md:col-span-5">
-              <p className="text-lg leading-relaxed text-paper/85">
+              <p className="text-lg leading-relaxed text-ink-soft">
                 From wedding trousseau trays to logo-printed corporate boxes — start with a collection, then tell us how to make it yours.
               </p>
             </Reveal>
@@ -72,7 +85,7 @@ export default function HomePage() {
               All {products.length} designs <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {featured.map((p, i) => (
               <Reveal key={p.slug} delay={(i % 4) * 70}>
                 <ProductCard product={p} />
@@ -83,16 +96,15 @@ export default function HomePage() {
       )}
 
       {/* How ordering works */}
-      <section aria-labelledby="process-title" className="relative overflow-hidden border-y border-line bg-paper">
-        <EngravedKnot tone="paper" flip="xy" className="-bottom-[18%] -left-[30%] w-[min(1000px,140vw)] md:-left-[12%] md:w-[min(1000px,75vw)]" />
+      <section aria-labelledby="process-title" className="knots-lilac relative overflow-hidden border-y border-line bg-lilac">
         <div className="relative container-page grid gap-12 py-20 md:py-28 lg:grid-cols-12">
           <Reveal className="lg:col-span-4">
             <p className="eyebrow">How it works</p>
             <h2 id="process-title" className="mt-4 text-title font-bold">
-              From idea to <span className="accent text-knot">wrapped</span> in four steps.
+              From idea to <span className="accent text-leaf-dark">wrapped</span> in four steps.
             </h2>
             <p className="mt-5 max-w-sm text-ink-soft">
-              Everything is made for you, so ordering is a conversation rather than a checkout.
+              Everything is <span className="font-semibold text-leaf-dark">made for you</span>, so ordering is a conversation rather than a checkout.
             </p>
             <Link href="/contact#quote" className="btn btn-primary mt-8">
               Start an enquiry <ArrowRight size={18} />
@@ -102,7 +114,7 @@ export default function HomePage() {
             {STEPS.map((s, i) => (
               <li key={s.title} className="bg-paper p-7 md:p-9">
                 <span className="font-display text-[2.5rem] leading-none font-bold text-knot tabular-nums">{String(i + 1).padStart(2, "0")}</span>
-                <h3 className="mt-6 text-xl font-semibold tracking-[-0.015em]">{s.title}</h3>
+                <h3 className="mt-6 text-subtitle font-semibold">{s.title}</h3>
                 <p className="mt-2 text-[0.9375rem] leading-relaxed text-stone">{s.body}</p>
               </li>
             ))}
@@ -116,18 +128,22 @@ export default function HomePage() {
           <p className="eyebrow">Materials</p>
           <h2 id="materials-title" className="mt-4 text-title font-bold">Chosen for the gift inside.</h2>
         </Reveal>
-        <div className="mt-10 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-5 lg:gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {MATERIALS.map((m, i) => {
             const p = getProduct(m.slug);
             const img = p ? cardImage(p) : null;
             return (
               <Reveal key={m.title} delay={i * 80}>
-                <Link href={p ? `/products/${p.slug}` : "/collections"} className="group block">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[var(--radius-card)] border border-line bg-paper">
-                    {img && <Image src={img} alt={p!.name} fill sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 90vw" className="object-cover transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out-soft)] group-hover:scale-[1.04]" />}
+                <Link href={p ? `/products/${p.slug}` : "/collections"} className="card-box group block h-full">
+                  {img ? (
+                    <ProductPhoto src={img} alt={p!.name} cutout={isCutout(p!)} sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 90vw" className="aspect-[4/5] rounded-[calc(var(--radius-card)-0.375rem)]" />
+                  ) : (
+                    <div className="aspect-[4/5] rounded-[calc(var(--radius-card)-0.375rem)] bg-mat" />
+                  )}
+                  <div className="px-3 pt-4 pb-2">
+                    <h3 className="text-subtitle font-semibold transition-colors group-hover:text-knot-on-dark">{m.title}</h3>
+                    <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-paper/70">{m.body}</p>
                   </div>
-                  <h3 className="mt-4 text-xl font-semibold tracking-[-0.015em] group-hover:text-knot">{m.title}</h3>
-                  <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-stone">{m.body}</p>
                 </Link>
               </Reveal>
             );
@@ -136,13 +152,12 @@ export default function HomePage() {
       </section>
 
       {/* Studio */}
-      <section aria-labelledby="studio-title" className="relative overflow-hidden bg-ink text-paper">
-        <EngravedKnot tone="ink" className="-top-[1%] -right-[55%] w-[170vw] md:top-auto md:right-auto md:-bottom-[30%] md:-left-[16%] md:w-[min(1250px,130vw)]" />
+      <section aria-labelledby="studio-title" className="surface-dark knots-ink relative overflow-hidden bg-ink text-paper">
         <div className="relative container-page grid gap-12 py-20 md:py-28 lg:grid-cols-12 lg:items-center">
           <Reveal className="lg:col-span-6">
             <p className="eyebrow eyebrow-on-dark">The studio</p>
             <h2 id="studio-title" className="mt-4 text-display font-bold">
-              Made in Jungpura, <span className="accent text-[#ff7a5c]">New Delhi.</span>
+              Made in Jungpura, <span className="accent text-leaf">New Delhi.</span>
             </h2>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-paper/75">
               Pink Knots was founded by {site.founder} in {site.founded}. Production, quality control, warehousing and packing all happen under one roof.
@@ -151,41 +166,53 @@ export default function HomePage() {
               About Pink Knots <ArrowRight size={18} />
             </Link>
           </Reveal>
-          <Reveal delay={120} className="lg:col-span-6">
-            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-card)] bg-paper/12">
-              {[
-                { k: "Since", v: String(site.founded) },
-                { k: "Designs", v: String(products.length) },
-                { k: "Typical minimum", v: "50 pcs" },
-                { k: "Certified", v: "ISO · MSME" },
-              ].map((f) => (
-                <div key={f.k} className="bg-ink p-6 md:p-8">
-                  <dt className="text-xs font-semibold tracking-[0.14em] text-paper/55 uppercase">{f.k}</dt>
-                  <dd className="mt-3 font-display text-[clamp(1.75rem,1.2rem+1.6vw,2.75rem)] leading-none font-bold tracking-[-0.03em]">{f.v}</dd>
+          {/* Read like the spec sheet that goes out with an order, not a row of stat tiles */}
+          <Reveal delay={120} className="lg:col-span-5 lg:col-start-8">
+            <dl className="border-t border-paper/20 text-[0.9375rem]">
+              {STUDIO_FACTS.map((f) => (
+                <div key={f.k} className="grid grid-cols-[8.5rem_1fr] gap-4 border-b border-paper/20 py-4 sm:grid-cols-[10rem_1fr]">
+                  <dt className="text-paper/55">{f.k}</dt>
+                  <dd className="text-paper">{f.v}</dd>
                 </div>
               ))}
             </dl>
+            <a href={site.reviewsUrl} target="_blank" rel="noopener noreferrer" className="link-draw mt-6 inline-flex items-center gap-2 text-[0.9375rem] text-paper/85 hover:text-paper">
+              Rated {site.rating.score} from {site.rating.count} customer reviews <ArrowRight size={16} />
+            </a>
           </Reveal>
         </div>
       </section>
 
-      {/* Closing CTA */}
-      <section aria-labelledby="cta-title" className="container-page py-20 md:py-28">
-        <Reveal className="relative overflow-hidden rounded-[1.5rem] bg-kraft px-6 py-14 md:px-14 md:py-20">
-          <EngravedKnot tone="kraft" className="top-1/2 -right-[30%] w-[min(820px,130%)] -translate-y-1/2 md:-right-[6%] md:w-[min(820px,62%)]" />
-          <div className="relative max-w-2xl">
+      {/* Closing enquiry: says exactly what we need to quote, then how to send it */}
+      <section aria-labelledby="cta-title" className="knots-lilac bg-lilac">
+        <div className="container-page grid gap-12 py-20 md:py-28 lg:grid-cols-12 lg:gap-16">
+          <Reveal className="lg:col-span-6">
             <h2 id="cta-title" className="text-display font-bold">
-              Tell us about the <span className="accent text-knot">occasion.</span>
+              Tell us about the <span className="accent text-knot-light">occasion.</span>
             </h2>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink-soft">
-              Share what you have in mind — quantities, sizes, branding, timeline — and we’ll come back with options and a quote.
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-soft">
+              A rough idea is enough to start. We come back with options, samples where useful, and a quote.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link href="/contact#quote" className="btn btn-primary">Request a quote <ArrowRight size={18} /></Link>
-              <a href={site.phone.href} className="btn btn-outline"><Phone size={18} /> {site.phone.display}</a>
+              <a href={site.phone.href} className="link-draw inline-flex items-center gap-2 font-semibold">
+                <Phone size={18} /> or call {site.phone.display}
+              </a>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+          <Reveal delay={120} className="lg:col-span-6">
+            <p className="text-sm font-semibold text-ink">Helpful to have ready</p>
+            <ol className="mt-4 border-t border-line-strong">
+              {BRIEF.map((b, i) => (
+                <li key={b.k} className="grid grid-cols-[2.25rem_1fr] gap-x-3 border-b border-line-strong py-4 sm:grid-cols-[2.25rem_8rem_1fr]">
+                  <span className="text-sm text-stone tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="font-semibold">{b.k}</span>
+                  <span className="col-start-2 text-ink-soft sm:col-start-3">{b.v}</span>
+                </li>
+              ))}
+            </ol>
+          </Reveal>
+        </div>
       </section>
     </>
   );

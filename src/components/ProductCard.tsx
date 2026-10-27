@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ProductPhoto } from "@/components/ProductPhoto";
 import { AddToQuoteButton } from "@/components/quote/AddToQuoteButton";
-import { cardImage, getCategory, moqLabel, moqNumber, priceLabel, type Product } from "@/lib/catalogue";
+import { cardImage, getCategory, isCutout, moqLabel, moqNumber, priceLabel, type Product } from "@/lib/catalogue";
 import { KnotMark } from "@/components/Wordmark";
 
 export function ProductCard({ product, priority = false, showCategory = true }: { product: Product; priority?: boolean; showCategory?: boolean }) {
@@ -10,36 +10,36 @@ export function ProductCard({ product, priority = false, showCategory = true }: 
   const href = `/products/${product.slug}`;
 
   return (
-    <article className="group relative flex w-full flex-col">
-      <Link href={href} className="relative block aspect-square overflow-hidden rounded-[var(--radius-card)] border border-line bg-paper transition-[border-color,box-shadow] duration-[var(--duration-base)] group-hover:border-line-strong group-hover:shadow-[var(--shadow-lift)]" tabIndex={-1} aria-hidden="true">
+    <article className="card-box group relative flex h-full w-full flex-col">
+      <Link href={href} className="block" tabIndex={-1} aria-hidden="true">
         {img ? (
-          <Image
+          <ProductPhoto
             src={img}
             alt=""
-            fill
+            cutout={isCutout(product)}
             sizes="(min-width: 1280px) 22rem, (min-width: 768px) 30vw, 50vw"
             priority={priority}
-            className="object-contain transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out-soft)] group-hover:scale-[1.035]"
+            className="aspect-square rounded-[calc(var(--radius-card)-0.375rem)]"
           />
         ) : (
-          <div className="grid h-full place-items-center bg-kraft/50">
+          <div className="grid aspect-square place-items-center rounded-[calc(var(--radius-card)-0.375rem)] bg-mat">
             <KnotMark className="h-12 w-12 opacity-40" />
           </div>
         )}
       </Link>
-      <div className="flex flex-1 flex-col pt-3.5">
+      <div className="flex flex-1 flex-col px-1.5 pt-3.5 pb-1 sm:px-2">
         {showCategory && (
-          <p className="truncate text-[0.6875rem] font-semibold tracking-[0.14em] text-stone uppercase">{getCategory(product.category)?.name}</p>
+          <p className="truncate text-xs text-paper/60">{getCategory(product.category)?.name}</p>
         )}
-        <h3 className="mt-1 font-display text-[1.0625rem] leading-snug font-semibold tracking-[-0.015em] text-ink">
-          <Link href={href} className="after:absolute after:inset-0 after:content-[''] hover:text-knot focus-visible:outline-none">
+        <h3 className="mt-1 font-display text-[1.0625rem] leading-snug font-semibold tracking-[-0.015em] text-paper">
+          <Link href={href} className="after:absolute after:inset-0 after:rounded-[var(--radius-card)] after:content-[''] group-hover:text-knot-on-dark focus-visible:outline-none">
             {product.name}
           </Link>
         </h3>
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <p className="text-sm leading-tight">
-            <span className="block font-semibold text-ink tabular-nums">{priceLabel(product)}</span>
-            {moq && <span className="mt-0.5 block text-xs text-stone">Min. order {moq}</span>}
+            <span className="block font-semibold text-paper tabular-nums">{priceLabel(product)}</span>
+            {moq && <span className="mt-0.5 block text-xs text-paper/60">Min. order {moq}</span>}
           </p>
           {/* sits above the stretched link */}
           <div className="relative z-10">

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
-import { ArrowRight, Check, Clipboard, Close, Phone } from "@/components/Icons";
+import { Alert, ArrowRight, Check, Clipboard, Close, Phone } from "@/components/Icons";
 import { KnotMark } from "@/components/Wordmark";
 import { useQuote } from "./QuoteProvider";
 
@@ -73,12 +73,12 @@ export function QuoteForm({ lookup, phone, enquiryUrl }: { lookup: QuoteLookup; 
   if (summary) {
     return (
       <div id="quote-summary" tabIndex={-1} className="rounded-[var(--radius-card)] border border-line bg-paper p-6 outline-none md:p-10">
-        <span className="grid h-12 w-12 place-items-center rounded-full bg-knot text-paper"><Check size={24} /></span>
+        <span className="grid h-12 w-12 place-items-center rounded-full bg-success text-ink"><Check size={24} /></span>
         <h3 className="mt-5 text-title font-bold">Your enquiry is ready to send.</h3>
         <p className="mt-3 max-w-xl text-ink-soft">
           Copy the details below, then paste them into our enquiry form or read them out when you call — whichever is easier.
         </p>
-        <pre className="mt-6 max-h-80 overflow-auto rounded-lg border border-line bg-ivory p-5 font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink">{summary}</pre>
+        <pre className="mt-6 max-h-80 overflow-auto rounded-lg border border-line bg-lilac p-5 font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink">{summary}</pre>
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="button" onClick={copy} className="btn btn-primary">
             {copied ? <Check size={18} /> : <Clipboard size={18} />} {copied ? "Copied" : "Copy enquiry"}
@@ -105,7 +105,7 @@ export function QuoteForm({ lookup, phone, enquiryUrl }: { lookup: QuoteLookup; 
           {lines.length > 0 && <span className="text-sm text-stone">{lines.length} item{lines.length > 1 ? "s" : ""}</span>}
         </legend>
         {!ready ? (
-          <div className="mt-4 h-24 animate-pulse rounded-[var(--radius-card)] bg-kraft/50" />
+          <div className="mt-4 h-24 animate-pulse rounded-[var(--radius-card)] bg-lilac/50" />
         ) : lines.length === 0 ? (
           <div className="mt-4 flex flex-col items-start gap-4 rounded-[var(--radius-card)] border border-dashed border-line-strong p-6 sm:flex-row sm:items-center">
             <KnotMark className="h-10 w-10 shrink-0 opacity-60" />
@@ -120,7 +120,7 @@ export function QuoteForm({ lookup, phone, enquiryUrl }: { lookup: QuoteLookup; 
               const p = lookup[i.slug];
               return (
                 <li key={i.slug} className="flex items-center gap-4 p-3 sm:p-4">
-                  <Link href={`/products/${i.slug}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-line bg-ivory">
+                  <Link href={`/products/${i.slug}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-line bg-lilac">
                     {p.image && <Image src={p.image} alt="" fill sizes="4rem" className="object-cover" />}
                   </Link>
                   <div className="min-w-0 flex-1">
@@ -139,7 +139,7 @@ export function QuoteForm({ lookup, phone, enquiryUrl }: { lookup: QuoteLookup; 
                       aria-label={`Quantity for ${p.name}`}
                     />
                   </label>
-                  <button type="button" onClick={() => remove(i.slug)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-stone hover:bg-ivory hover:text-knot" aria-label={`Remove ${p.name}`}>
+                  <button type="button" onClick={() => remove(i.slug)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-stone hover:bg-lilac hover:text-knot" aria-label={`Remove ${p.name}`}>
                     <Close size={18} />
                   </button>
                 </li>
@@ -220,7 +220,11 @@ function Field({ id, label, hint, required, error, children }: { id: string; lab
         {hint && <span className="text-xs font-normal text-stone">{hint}</span>}
       </label>
       {children}
-      {error && <p id={`q-${id}-err`} className="mt-1.5 text-sm font-medium text-knot">{error}</p>}
+      {error && (
+        <p id={`q-${id}-err`} className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-error">
+          <Alert size={16} className="shrink-0" /> {error}
+        </p>
+      )}
     </div>
   );
 }

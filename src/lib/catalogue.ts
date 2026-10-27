@@ -1,5 +1,6 @@
 import data from "@/data/catalogue.json";
 import imageMap from "@/data/images.json";
+import cutoutList from "@/data/cutouts.json";
 
 export type Spec = { label: string; value: string };
 
@@ -41,6 +42,7 @@ export const categories = data.categories as Category[];
 export const products = data.products as Product[];
 
 const images = imageMap as Record<string, ImageEntry>;
+const cutouts = new Set<string>(cutoutList);
 const productBySlug = new Map(products.map((p) => [p.slug, p]));
 const categoryBySlug = new Map(categories.map((c) => [c.slug, c]));
 
@@ -52,6 +54,8 @@ export const productsInCollection = (slug: string) => products.filter((p) => p.c
 export const productsInCategory = (slug: string) => products.filter((p) => p.category === slug);
 
 export const cardImage = (p: Product) => images[p.slug]?.card ?? null;
+/** Card photo shot on plain white (scripts/mark-cutouts.mjs), shown on the lilac mat. */
+export const isCutout = (p: Product) => cutouts.has(p.slug);
 export const galleryImages = (p: Product) => images[p.slug]?.gallery ?? [];
 
 /** The lowest documented price in a set of products, for "from ₹…" labels. */
@@ -98,5 +102,5 @@ export const featuredProducts = () =>
 /** A representative photo for a collection: the first product with an image. */
 export const collectionCover = (slug: string) => {
   const p = productsInCollection(slug).find((x) => cardImage(x));
-  return p ? { src: cardImage(p)!, alt: p.name } : null;
+  return p ? { src: cardImage(p)!, alt: p.name, cutout: isCutout(p) } : null;
 };

@@ -15,7 +15,7 @@ export default function CollectionsPage() {
     <>
       <PageIntro
         eyebrow="Collections"
-        title={<>Every design, <span className="accent text-knot">made to order.</span></>}
+        title={<>Every design, <span className="accent text-leaf-dark">made to order.</span></>}
         crumbs={[{ href: "/", label: "Home" }, { href: "/collections", label: "Collections" }]}
       >
         {products.length} pieces across six collections. Each can be customised in size, colour, print and finish.
@@ -31,7 +31,7 @@ export default function CollectionsPage() {
         </ul>
       </section>
 
-      <section aria-labelledby="index-title" className="border-t border-line bg-paper">
+      <section aria-labelledby="index-title" className="knots-lilac border-t border-line bg-lilac">
         <div className="container-page py-14 md:py-20">
           <h2 id="index-title" className="text-title font-bold">Browse by category</h2>
           <div className="mt-10 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">

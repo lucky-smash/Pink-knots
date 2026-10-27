@@ -20,7 +20,7 @@ export default function ContactPage() {
     <>
       <PageIntro
         eyebrow="Contact"
-        title={<>Let’s make something <span className="accent text-knot">worth unwrapping.</span></>}
+        title={<>Let’s make something <span className="accent text-knot-light">worth unwrapping.</span></>}
         crumbs={[{ href: "/", label: "Home" }, { href: "/contact", label: "Contact" }]}
       >
         To get the best quote, tell us what you’re looking for, the features or specifications, how it will be used, and the quantity you need.
@@ -33,10 +33,10 @@ export default function ContactPage() {
 
         <aside className="lg:col-span-4">
           <div className="space-y-4 lg:sticky lg:top-28">
-            <div className="rounded-[var(--radius-card)] bg-ink p-7 text-paper">
+            <div className="surface-dark rounded-[var(--radius-card)] bg-ink p-7 text-paper">
               <p className="eyebrow eyebrow-on-dark">Call us</p>
-              <a href={site.phone.href} className="mt-4 flex items-center gap-3 font-display text-2xl font-bold tracking-[-0.02em] hover:text-kraft">
-                <Phone size={22} className="text-knot" /> {site.phone.display}
+              <a href={site.phone.href} className="mt-4 flex items-center gap-3 font-display text-2xl font-bold tracking-[-0.02em] hover:text-lilac">
+                <Phone size={22} className="text-knot-on-dark" /> {site.phone.display}
               </a>
               <p className="mt-3 text-sm text-paper/60">Ask for {site.founder}.</p>
             </div>

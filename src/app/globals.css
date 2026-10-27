@@ -1,26 +1,44 @@
 @import "tailwindcss";
 
 /*
- * Pink Knots design tokens.
- * Knot Red (#C82A0F) is the one brand colour; everything else is a warm neutral
- * drawn from packaging materials — ivory tissue, kraft board, charcoal rigid box.
+ * Pink Knots design tokens. Rationale and measurements: docs/PINK_KNOTS_BRAND_AUDIT.md
+ *
+ * The theme is the logo's own palette, sampled from the artwork:
+ * - Aubergine (ink) — the wordmark — for text and dark surfaces.
+ * - Magenta (knot) — the ribbon — for actions, links and the brand band; violet for hover.
+ * - Light purple — the ribbon's highlight — for display accents and accents on dark.
+ * - Green — the ribbon's other strand — for display accents alternating with magenta, success and highlights on dark.
+ * - White — the logo's ground — for the page, with light purple tints for alternate sections.
+ * Errors use the violet plus an icon, so the theme has no colour from outside the logo.
  */
 @theme {
-  /* Brand */
-  --color-knot: #c82a0f;
-  --color-knot-deep: #a32109;
-  --color-knot-ink: #7a1806;
-  --color-knot-tint: #f7e4dd;
+  /* Brand (exact logo colours) */
+  --color-knot: #b2209a; /* magenta: buttons, links, brand band (white text 5.9:1) */
+  --color-knot-deep: #58167d; /* violet: hover, pressed */
+  --color-knot-ink: #13106d; /* indigo: ribbon tips */
+  --color-knot-light: #e73ac6; /* light purple: display accents (3.6:1, large text only), accents on dark (4.9:1) */
+  --color-leaf: #80e63e; /* green: accents on dark (11.3:1), fills under aubergine text */
+  --color-leaf-deep: #4aa538; /* the ribbon's deeper green: decorative accents on white */
+  --color-leaf-dark: #2f7d22; /* the ribbon's shaded green: green text on white (5.2:1) and lilac (4.6:1) */
+  --color-lime: #e9ff79; /* ribbon highlight: selection */
+  --color-knot-on-dark: var(--color-knot-light);
 
   /* Neutrals */
-  --color-ink: #1a1613;
-  --color-ink-soft: #3a332d;
-  --color-stone: #6b6259;
-  --color-ivory: #f6f1e9;
-  --color-paper: #fffdf9;
-  --color-kraft: #e7dcc9;
-  --color-line: #e2d8c9;
-  --color-line-strong: #cbbfad;
+  --color-ink: #210f31; /* logo wordmark */
+  --color-ink-soft: #43354d;
+  --color-stone: #665c6c;
+  --color-canvas: #ffffff; /* the logo's ground */
+  --color-paper: #ffffff;
+  --color-lilac: #fbeef8; /* light purple, 9% on white: alternate sections, panels */
+  --color-knot-tint: #f9e1f4; /* light purple, 16%: selected states */
+  --color-mat: #e4daea; /* logo violet, 16%: product photo cards. Violet, not pink, because cut-outs are
+                           multiplied into it — this darkens them evenly instead of casting them pink */
+  --color-line: #ece0ea;
+  --color-line-strong: #d5c3d2;
+
+  /* Status */
+  --color-success: var(--color-leaf); /* filled, with aubergine text or icon */
+  --color-error: var(--color-knot-deep); /* logo violet (11.5:1); errors also carry an icon, so they never rely on colour */
 
   /* Type */
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
@@ -37,15 +55,29 @@
   --text-title: clamp(1.75rem, 1.3rem + 1.6vw, 2.75rem);
   --text-title--line-height: 1.08;
   --text-title--letter-spacing: -0.02em;
+  --text-subtitle: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem); /* h3 */
+  --text-subtitle--line-height: 1.2;
+  --text-subtitle--letter-spacing: -0.015em;
+  --text-lead: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --text-lead--line-height: 1.6;
+  --text-label: 0.75rem; /* eyebrows, metadata, product category */
+  --text-label--line-height: 1.3;
+  --text-label--letter-spacing: 0.14em;
+
+  /* Layout */
+  --container-page: 84rem;
+  --header-h: 4.5rem;
+  --header-h-md: 5.25rem;
+  --section-y: clamp(4.5rem, 3rem + 5vw, 7rem);
 
   /* Shape */
   --radius-card: 0.875rem;
   --radius-control: 999px;
 
-  /* Elevation — warm-tinted, never grey */
-  --shadow-card: 0 1px 2px rgb(26 22 19 / 0.04), 0 8px 24px -12px rgb(26 22 19 / 0.18);
-  --shadow-lift: 0 2px 4px rgb(26 22 19 / 0.05), 0 22px 44px -20px rgb(26 22 19 / 0.32);
-  --shadow-menu: 0 24px 60px -24px rgb(26 22 19 / 0.35), 0 2px 6px rgb(26 22 19 / 0.06);
+  /* Elevation — tinted with the aubergine ink, never grey */
+  --shadow-card: 0 1px 2px rgb(33 15 49 / 0.04), 0 8px 24px -12px rgb(33 15 49 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(33 15 49 / 0.05), 0 22px 44px -20px rgb(33 15 49 / 0.3);
+  --shadow-menu: 0 24px 60px -24px rgb(33 15 49 / 0.35), 0 2px 6px rgb(33 15 49 / 0.06);
 
   /* Motion */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -57,16 +89,36 @@
   --breakpoint-xs: 30rem;
 }
 
+/* Always emitted, even before a utility uses them, so component CSS and the docs can rely on them */
+@theme static {
+
+  /* Semantic aliases — prefer these in new component CSS */
+  --color-brand-primary: var(--color-ink);
+  --color-brand-secondary: var(--color-leaf);
+  --color-brand-accent: var(--color-knot);
+  --color-brand-accent-hover: var(--color-knot-deep);
+  --color-background-primary: var(--color-canvas);
+  --color-background-secondary: var(--color-lilac);
+  --color-surface: var(--color-paper);
+  --color-text-primary: var(--color-ink);
+  --color-text-secondary: var(--color-stone);
+  --color-border: var(--color-line);
+}
+
 @layer base {
+  :root {
+    /* Contextual: flips to paper on dark and magenta surfaces (see .surface-dark) */
+    --color-focus-ring: var(--color-ink);
+  }
   html {
-    background: var(--color-ivory);
-    color: var(--color-ink);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    scroll-padding-top: 5.5rem;
+    scroll-padding-top: calc(var(--header-h-md) + 1rem);
   }
   body {
-    background: var(--color-ivory);
+    background: var(--color-canvas);
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.6;
@@ -77,9 +129,9 @@
     text-wrap: balance;
   }
   p { text-wrap: pretty; }
-  ::selection { background: var(--color-knot); color: var(--color-paper); }
+  ::selection { background: var(--color-lime); color: var(--color-ink); }
   :focus-visible {
-    outline: 2px solid var(--color-knot);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 3px;
     border-radius: 4px;
   }
@@ -88,33 +140,74 @@
 @layer components {
   .container-page {
     width: 100%;
-    max-width: 84rem;
+    max-width: var(--container-page);
     margin-inline: auto;
     padding-inline: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
   }
+  .section-y { padding-block: var(--section-y); }
 
-  /* Small all-caps label with a red knot dot — the brand's signature eyebrow */
+  /* Small debossed knots tiled across a surface (src/app/patterns). Sets only the image,
+     so it layers over the section's own bg-* colour. Pick the class matching that colour. */
+  .knots-paper, .knots-lilac, .knots-knot, .knots-ink {
+    background-size: 132px 112px;
+    background-repeat: repeat;
+    /* --knots-y (set by KnotsAlign) puts every surface on one page-wide grid */
+    background-position: center var(--knots-y, 0px);
+  }
+  /* ?v busts the day-long tile cache when the tones change */
+  .knots-paper { background-image: url(/patterns/knots-paper.svg?v=2); }
+  .knots-lilac { background-image: url(/patterns/knots-lilac.svg?v=2); }
+  .knots-knot { background-image: url(/patterns/knots-knot.svg?v=2); }
+  .knots-ink { background-image: url(/patterns/knots-ink.svg?v=2); }
+
+  /* Aubergine or magenta sections: light focus ring */
+  .surface-dark { --color-focus-ring: var(--color-paper); }
+
+  /* Cards in the gift box's aubergine (giftBoxScene INK). The photo keeps its light mat inside,
+     like a print mounted in the box lid, so white-ground cut-outs still multiply cleanly. */
+  .card-box {
+    --color-focus-ring: var(--color-paper);
+    border-radius: var(--radius-card);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding: 0.625rem;
+    box-shadow: var(--shadow-card);
+    transition: transform var(--duration-base) var(--ease-out-soft), box-shadow var(--duration-base) var(--ease-out-soft);
+  }
+  .card-box:hover { transform: translateY(-0.25rem); box-shadow: var(--shadow-lift); }
+  @media (prefers-reduced-motion: reduce) { .card-box:hover { transform: none; } }
+
+  /* The logo needs a light ground (its lettering is aubergine). On dark sections it sits on paper. */
+  .logo-tile {
+    display: inline-flex;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-card);
+    background: var(--color-paper);
+  }
+
+  /* Small all-caps label with a green dot (the logo ribbon's green strand) — the signature eyebrow */
   .eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
     font-family: var(--font-sans);
-    font-size: 0.75rem;
+    font-size: var(--text-label);
+    line-height: var(--text-label--line-height);
     font-weight: 600;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--color-stone);
+    color: var(--color-text-secondary);
   }
   .eyebrow::before {
     content: "";
     width: 0.45rem;
     height: 0.45rem;
     border-radius: 999px;
-    background: var(--color-knot);
+    background: var(--color-leaf-deep);
     flex: none;
   }
-  .eyebrow-on-dark { color: rgb(255 253 249 / 0.78); }
-  .eyebrow-on-dark::before { background: var(--color-paper); }
+  .eyebrow-on-dark { color: rgb(255 255 255 / 0.78); }
+  .eyebrow-on-dark::before { background: var(--color-leaf); }
 
   .accent {
     font-family: var(--font-accent);
@@ -146,14 +239,14 @@
   .btn svg { transition: transform var(--duration-base) var(--ease-out-soft); }
   .btn:hover svg.arrow { transform: translateX(3px); }
 
-  .btn-primary { background: var(--color-knot); color: var(--color-paper); }
-  .btn-primary:hover { background: var(--color-knot-deep); box-shadow: 0 10px 24px -12px rgb(200 42 15 / 0.7); }
+  .btn-primary { background: var(--color-brand-accent); color: var(--color-paper); }
+  .btn-primary:hover { background: var(--color-brand-accent-hover); box-shadow: 0 10px 24px -12px rgb(178 32 154 / 0.7); }
   .btn-dark { background: var(--color-ink); color: var(--color-paper); }
   .btn-dark:hover { background: var(--color-ink-soft); }
   .btn-outline { border: 1.5px solid var(--color-ink); color: var(--color-ink); }
   .btn-outline:hover { background: var(--color-ink); color: var(--color-paper); }
   .btn-light { background: var(--color-paper); color: var(--color-ink); }
-  .btn-light:hover { background: var(--color-ivory); }
+  .btn-light:hover { background: var(--color-lilac); }
   .btn-ghost-light { border: 1.5px solid rgb(255 253 249 / 0.55); color: var(--color-paper); }
   .btn-ghost-light:hover { background: var(--color-paper); color: var(--color-knot); border-color: var(--color-paper); }
   .btn-sm { min-height: 2.5rem; padding: 0 1rem; font-size: 0.875rem; }
@@ -172,15 +265,16 @@
     width: 100%;
     min-height: 3rem;
     padding: 0.7rem 0.95rem;
-    border: 1.5px solid var(--color-line);
+    border: 1.5px solid var(--color-border);
     border-radius: 0.6rem;
-    background: var(--color-paper);
-    color: var(--color-ink);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
     transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
   }
   .field:hover { border-color: var(--color-line-strong); }
-  .field:focus { outline: none; border-color: var(--color-knot); box-shadow: 0 0 0 3px rgb(200 42 15 / 0.14); }
-  .field[aria-invalid="true"] { border-color: var(--color-knot); }
+  .field:focus { outline: none; border-color: var(--color-ink); box-shadow: 0 0 0 3px rgb(33 15 49 / 0.12); }
+  .field[aria-invalid="true"] { border-color: var(--color-error); border-width: 2px; }
+  .field[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgb(88 22 125 / 0.16); }
 
   /* Scroll reveal; JS adds .is-visible. Without JS or with reduced motion, content is simply shown. */
   .reveal {

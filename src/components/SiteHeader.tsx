@@ -79,18 +79,20 @@ export function SiteHeader({ collections }: { collections: NavCollection[] }) {
   return (
     <header
       className={`sticky top-0 z-50 border-b transition-[background-color,border-color,box-shadow] duration-[var(--duration-base)] ${
-        scrolled || menuOpen ? "border-line bg-ivory" : "border-transparent bg-ivory"
+        scrolled || menuOpen ? "border-line bg-canvas" : "border-transparent bg-canvas"
       }`}
     >
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-paper">
         Skip to content
       </a>
-      <div className="container-page flex h-16 items-center gap-6 md:h-[4.5rem]">
-        <Link href="/" aria-label="Pink Knots — home" className="mr-auto shrink-0 lg:mr-6">
+      <div className="container-page flex h-[var(--header-h)] items-center gap-6 md:h-[var(--header-h-md)]">
+        <Link href="/" aria-label="Pink Knots — home" className="mr-auto shrink-0 rounded-md lg:mr-0">
           <Wordmark />
         </Link>
+        {/* Hairline between the stacked logo and the nav, so the lockup reads as set, not dropped in */}
+        <span aria-hidden="true" className="hidden h-9 w-px bg-line-strong lg:block" />
 
-        <nav aria-label="Main" className="hidden items-center gap-1 lg:mr-auto lg:flex">
+        <nav aria-label="Main" className="-ml-2 hidden items-center gap-1 lg:mr-auto lg:flex">
           <div className="relative" onPointerEnter={openMenu} onPointerLeave={scheduleClose}>
             <button
               ref={triggerRef}
@@ -120,7 +122,7 @@ export function SiteHeader({ collections }: { collections: NavCollection[] }) {
                       <Link
                         href={`/collections/${c.slug}`}
                         aria-current={pathname === `/collections/${c.slug}` ? "page" : undefined}
-                        className="group block rounded-lg p-3 transition-colors hover:bg-ivory aria-[current=page]:bg-knot-tint"
+                        className="group block rounded-lg p-3 transition-colors hover:bg-lilac aria-[current=page]:bg-knot-tint"
                       >
                         <span className="flex items-baseline justify-between gap-2 font-display text-[1.0625rem] font-semibold tracking-[-0.015em] text-ink group-hover:text-knot">
                           {c.name}
@@ -131,14 +133,14 @@ export function SiteHeader({ collections }: { collections: NavCollection[] }) {
                     </li>
                   ))}
                 </ul>
-                <div className="flex flex-col justify-between bg-ink p-6 text-paper">
+                <div className="surface-dark flex flex-col justify-between bg-ink p-6 text-paper">
                   <div>
                     <p className="eyebrow eyebrow-on-dark">Made to order</p>
                     <p className="mt-3 font-display text-xl leading-tight font-semibold tracking-[-0.02em]">
                       Every piece sized, printed and finished for your occasion.
                     </p>
                   </div>
-                  <Link href="/collections" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-paper hover:text-kraft">
+                  <Link href="/collections" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-paper hover:text-lilac">
                     All collections <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -161,21 +163,21 @@ export function SiteHeader({ collections }: { collections: NavCollection[] }) {
           <Link href="/contact#quote" className="btn btn-primary btn-sm hidden sm:inline-flex">
             Request a quote
             {quoteCount > 0 && (
-              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-paper px-1.5 text-xs font-bold text-knot tabular-nums" aria-label={`${quoteCount} items in quote list`}>
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-leaf px-1.5 text-xs font-bold text-ink tabular-nums" aria-label={`${quoteCount} items in quote list`}>
                 {quoteCount}
               </span>
             )}
           </Link>
           <button
             type="button"
-            className="relative grid h-11 w-11 place-items-center rounded-full text-ink transition-colors hover:bg-kraft/60 lg:hidden"
+            className="relative grid h-11 w-11 place-items-center rounded-full text-ink transition-colors hover:bg-lilac/60 lg:hidden"
             aria-label="Open menu"
             aria-expanded={sheetOpen}
             aria-controls="mobile-menu"
             onClick={() => setSheetOpen(true)}
           >
             <Menu size={22} />
-            {quoteCount > 0 && <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-knot sm:hidden" aria-hidden="true" />}
+            {quoteCount > 0 && <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-leaf-deep sm:hidden" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -188,13 +190,13 @@ export function SiteHeader({ collections }: { collections: NavCollection[] }) {
         aria-label="Menu"
         // Close on any link tap — including a link to the page already open
         onClick={(e) => (e.target as HTMLElement).closest("a") && setSheetOpen(false)}
-        className={`fixed inset-0 z-50 flex flex-col bg-ivory transition-[opacity,visibility] duration-[var(--duration-base)] lg:hidden ${
+        className={`fixed inset-0 z-50 flex flex-col bg-canvas transition-[opacity,visibility] duration-[var(--duration-base)] lg:hidden ${
           sheetOpen ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >
-        <div className="container-page flex h-16 items-center justify-between">
+        <div className="container-page flex h-[var(--header-h)] items-center justify-between md:h-[var(--header-h-md)]">
           <Wordmark />
-          <button type="button" className="grid h-11 w-11 place-items-center rounded-full hover:bg-kraft/60" aria-label="Close menu" onClick={() => setSheetOpen(false)}>
+          <button type="button" className="grid h-11 w-11 place-items-center rounded-full hover:bg-lilac/60" aria-label="Close menu" onClick={() => setSheetOpen(false)}>
             <Close size={22} />
           </button>
         </div>

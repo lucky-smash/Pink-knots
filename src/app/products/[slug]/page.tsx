@@ -69,7 +69,7 @@ export default async function ProductPage({ params }: Params) {
           {images.length ? (
             <ProductGallery images={images} name={product.name} />
           ) : (
-            <div className="grid aspect-square place-items-center rounded-[var(--radius-card)] border border-line bg-kraft/40">
+            <div className="grid aspect-square place-items-center rounded-[var(--radius-card)] border border-line bg-lilac/40">
               <div className="text-center">
                 <KnotMark className="mx-auto h-16 w-16 opacity-50" />
                 <p className="mt-3 text-sm text-stone">Photos available on request</p>
@@ -147,13 +147,13 @@ export default async function ProductPage({ params }: Params) {
       </section>
 
       {related.length > 0 && (
-        <section aria-labelledby="related-title" className="border-t border-line bg-paper">
+        <section aria-labelledby="related-title" className="knots-lilac border-t border-line bg-lilac">
           <div className="container-page py-16 md:py-20">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <h2 id="related-title" className="text-title font-bold">You might also consider</h2>
               <Link href={`/collections/${collection.slug}`} className="link-draw font-semibold text-knot">All {collection.name}</Link>
             </div>
-            <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4 lg:gap-x-6">
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:gap-6">
               {related.map((p) => <ProductCard key={p.slug} product={p} />)}
             </div>
           </div>

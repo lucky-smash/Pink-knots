@@ -18,7 +18,7 @@ export function AddToQuoteButton({ slug, name, defaultQty, variant = "full" }: P
         aria-pressed={added}
         aria-label={added ? `Remove ${name} from quote list` : `Add ${name} to quote list`}
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border-[1.5px] transition-[background-color,border-color,color,transform] duration-[var(--duration-base)] ease-[var(--ease-out-soft)] active:scale-95 ${
-          added ? "border-knot bg-knot text-paper" : "border-line-strong text-ink hover:border-knot hover:bg-knot hover:text-paper"
+          added ? "border-leaf bg-leaf text-ink" : "border-paper/30 text-paper hover:border-knot hover:bg-knot hover:text-paper"
         }`}
       >
         {added ? <Check size={18} /> : <Plus size={18} />}

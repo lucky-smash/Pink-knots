@@ -22,12 +22,12 @@ export function KnotMark({ className = "", color = "var(--color-knot)" }: { clas
   );
 }
 
-// The original logo from pink-knots.com (120px is the largest they publish). Its lettering
-// is dark, so on dark backgrounds it sits on a paper tile.
+// The original logo from pink-knots.com, cut out of its white background with the artwork
+// untouched (scripts/logo-cutout.mjs). The source is 98px tall, so it's never shown above
+// 56px. Its lettering is aubergine, so on dark backgrounds it sits on a paper tile.
 export function Wordmark({ tone = "dark", className = "" }: { tone?: "dark" | "light"; className?: string }) {
-  const tile = tone === "light" ? "rounded-xl bg-paper px-3 py-2" : "";
   return (
-    <span className={`inline-flex ${tile} ${className}`}>
+    <span className={`inline-flex ${tone === "light" ? "logo-tile" : ""} ${className}`}>
       <Image src="/brand/pink-knots-logo.png" alt="Pink Knots" width={119} height={98} priority className="h-12 w-auto md:h-14" />
     </span>
   );

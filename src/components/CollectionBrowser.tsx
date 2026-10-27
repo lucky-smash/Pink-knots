@@ -39,7 +39,7 @@ export function CollectionBrowser({ categories, items }: { categories: Cat[]; it
 
   return (
     <div>
-      <div className="sticky top-16 z-30 -mx-[clamp(1rem,0.5rem+2.5vw,2.5rem)] border-b border-line bg-ivory px-[clamp(1rem,0.5rem+2.5vw,2.5rem)] md:top-[4.5rem]">
+      <div className="sticky top-[var(--header-h)] z-30 -mx-[clamp(1rem,0.5rem+2.5vw,2.5rem)] border-b border-line bg-canvas px-[clamp(1rem,0.5rem+2.5vw,2.5rem)] md:top-[var(--header-h-md)]">
         <div className="flex items-center gap-4 py-3">
           <div role="group" aria-label="Filter by category" className="-my-1 flex flex-1 gap-2 overflow-x-auto py-1 pr-6 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] [scrollbar-width:none]">
             <Chip selected={!active} onClick={() => choose(null)}>All · {items.length}</Chip>
@@ -76,7 +76,7 @@ export function CollectionBrowser({ categories, items }: { categories: Cat[]; it
       )}
 
       <p className="sr-only" aria-live="polite">{visible.length} products shown</p>
-      <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">
+      <ul className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
         {visible.map((i) => (
           <li key={i.slug} className="flex">{i.card}</li>
         ))}

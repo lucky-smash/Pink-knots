@@ -31,7 +31,7 @@ export function PageIntro({ eyebrow, title, children, crumbs, aside }: { eyebrow
           <div className="lg:col-span-8">
             <p className="eyebrow">{eyebrow}</p>
             <h1 className="mt-4 text-display font-bold">{title}</h1>
-            {children && <div className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">{children}</div>}
+            {children && <div className="mt-5 max-w-2xl text-lead text-ink-soft">{children}</div>}
           </div>
           {aside && <div className="lg:col-span-4 lg:justify-self-end">{aside}</div>}
         </div>

@@ -52,7 +52,7 @@ export default async function CollectionPage({ params }: Params) {
         />
       </section>
 
-      <section aria-labelledby="more-title" className="border-t border-line bg-paper">
+      <section aria-labelledby="more-title" className="knots-lilac border-t border-line bg-lilac">
         <div className="container-page py-14 md:py-16">
           <h2 id="more-title" className="text-xl font-semibold tracking-[-0.015em]">More collections</h2>
           <ul className="mt-6 flex flex-wrap gap-3">

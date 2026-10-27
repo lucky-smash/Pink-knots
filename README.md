@@ -17,7 +17,11 @@ node scripts/behaviour.mjs                 # interaction checks against a runnin
 node scripts/shot.mjs /path 1440 900 0 800 # screenshots at scroll offsets (px) into .shots/
 ```
 
-- Design tokens: `src/app/globals.css` (`@theme`). Knot Red `#C82A0F` is the only brand colour.
+- Design tokens: `src/app/globals.css` (`@theme`). The palette is the logo's own, sampled from the artwork: aubergine
+  `#210F31` ink, magenta `#B2209A` actions, violet hover, light purple and green accents, white ground. No other brand
+  colours. Measurements and reasoning: `docs/PINK_KNOTS_BRAND_AUDIT.md`.
+- Logo: `public/brand/pink-knots-logo.png` is generated from the untouched original in `docs/brand/` by
+  `node scripts/logo-cutout.mjs`. Never edit, recolour or filter it; use it on light grounds at ≤ 56 px tall.
 - Gift-box hero: `src/components/home/giftBoxScene.ts` (procedural three.js, driven by `setProgress(0..1)`)
   and `GiftHero.tsx` (sticky scroll stage, captions, fallbacks for reduced motion / no WebGL / low power).
 - Ordering is enquiry-based: the quote list (`src/components/quote/`) replaces a cart. The form currently
