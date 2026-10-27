@@ -35,6 +35,10 @@
                            multiplied into it — this darkens them evenly instead of casting them pink */
   --color-line: #ece0ea;
   --color-line-strong: #d5c3d2;
+  /* Hero studio: a warm ivory sweep, so the logo's magenta, indigo and green are the only colour */
+  --color-studio-light: #fffdfa;
+  --color-studio: #f8f3ee;
+  --color-studio-deep: #ece4dc;
 
   /* Status */
   --color-success: var(--color-leaf); /* filled, with aubergine text or icon */

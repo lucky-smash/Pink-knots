@@ -24,14 +24,14 @@ const KNOT_QUADS = (() => {
 
 export function GiftBoxIllustration({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 420 400" className={className} role="img" aria-label="An aubergine Pink Knots gift box tied with a magenta satin ribbon and the Pink Knots infinity knot">
+    <svg viewBox="0 0 420 400" className={className} role="img" aria-label="An aubergine Pink Knots gift box tied with violet satin bands and the Pink Knots infinity ribbon">
       <defs>
         <radialGradient id="gbi-shadow" cx="50%" cy="50%" r="50%">
           <stop offset="0" stopColor="#210f31" stopOpacity="0.32" />
           <stop offset="1" stopColor="#210f31" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="gbi-front" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="#33203f" />
+          <stop offset="0" stopColor="#36203f" />
           <stop offset="1" stopColor="#210f31" />
         </linearGradient>
         <linearGradient id="gbi-side" x1="0" x2="1">
@@ -39,9 +39,9 @@ export function GiftBoxIllustration({ className = "" }: { className?: string }) 
           <stop offset="1" stopColor="#2a1838" />
         </linearGradient>
         <linearGradient id="gbi-ribbon" x1="0" x2="1">
-          <stop offset="0" stopColor="#8a1586" />
-          <stop offset="0.5" stopColor="#c42aa8" />
-          <stop offset="1" stopColor="#8a1586" />
+          <stop offset="0" stopColor="#3d1060" />
+          <stop offset="0.5" stopColor="#6a2496" />
+          <stop offset="1" stopColor="#3d1060" />
         </linearGradient>
       </defs>
       <ellipse cx="210" cy="352" rx="170" ry="26" fill="url(#gbi-shadow)" />
@@ -55,10 +55,10 @@ export function GiftBoxIllustration({ className = "" }: { className?: string }) 
       {/* ribbon over lid and down both faces */}
       <path d="M134 123 L286 177 L262 185.5 L110 131.5 Z" fill="url(#gbi-ribbon)" />
       <path d="M286 123 L134 177 L158 185.5 L310 131.5 Z" fill="url(#gbi-ribbon)" />
-      <path d="M134 177 L158 185.5 L158 227.5 L134 219 Z M158 280 L158 330 L134 321.5 L134 271 Z" fill="#a41d8e" />
-      <path d="M262 185.5 L286 177 L286 219 L262 227.5 Z M262 280 L286 271 L286 321.5 L262 330 Z" fill="#8a1586" />
-      <path d="M134 219 L158 227.5 L158 280 L134 271 Z" fill="#a41d8e" />
-      <path d="M262 227.5 L286 219 L286 271 L262 280 Z" fill="#8a1586" />
+      <path d="M134 177 L158 185.5 L158 227.5 L134 219 Z M158 280 L158 330 L134 321.5 L134 271 Z" fill="#4c1774" />
+      <path d="M262 185.5 L286 177 L286 219 L262 227.5 Z M262 280 L286 271 L286 321.5 L262 330 Z" fill="#3a0f5c" />
+      <path d="M134 219 L158 227.5 L158 280 L134 271 Z" fill="#4c1774" />
+      <path d="M262 227.5 L286 219 L286 271 L262 280 Z" fill="#3a0f5c" />
       {/* the logo's infinity ribbon, standing on the ribbon crossing */}
       <g>
         {KNOT_QUADS.map((q, i) => (

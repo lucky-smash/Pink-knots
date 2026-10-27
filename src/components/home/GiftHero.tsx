@@ -10,12 +10,22 @@ type Mode = "pending" | "scroll" | "static";
 
 // Caption windows on the 0..1 timeline: [fade-in start, fully in, fade-out start, gone]
 const CAPTIONS: [number, number, number, number][] = [
-  [-1, 0, 0.12, 0.22],
-  [0.26, 0.32, 0.44, 0.5],
-  [0.55, 0.61, 0.72, 0.78],
+  [-1, 0, 0.3, 0.38], // the hero copy stays while the logo becomes the ribbon (scene MORPH_END)
+  [0.4, 0.45, 0.52, 0.58],
+  [0.6, 0.65, 0.73, 0.79],
 ];
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+// The scene's resting first frame, saved from the last visit (GiftBoxScene.snapshot), so a reload
+// opens on the same box the scene then takes over from. Keyed by stage size and pixel ratio
+// (same cap as the renderer), since it only lines up with a canvas of the same size.
+const SNAPSHOT_KEY = "pk-hero-box-v2"; // bump when the first frame changes, so no stale box shows
+
+// Reduced motion / low power: no scroll story, so the ribbon holds one shape — far enough along
+// to have its satin depth, early enough that its outline is still plainly the logo's
+const STILL_MORPH = 0.55;
+const stageSizeKey = (stage: HTMLElement) => `${stage.clientWidth}x${stage.clientHeight}@${Math.min(window.devicePixelRatio, 1.75)}`;
 
 export function GiftHero({ productCount, collectionCount }: { productCount: number; collectionCount: number }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -27,8 +37,9 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
   const cardCanvasRef = useRef<HTMLCanvasElement>(null);
   const cardShadowRef = useRef<HTMLDivElement>(null);
   const cueRef = useRef<HTMLDivElement>(null);
+  const snapshotRef = useRef<HTMLImageElement>(null);
   const [mode, setMode] = useState<Mode>("pending");
-  const [sceneReady, setSceneReady] = useState(false);
+  const [noWebgl, setNoWebgl] = useState(false);
 
   // Decide once on mount: full scroll story, or a calm static hero.
   useEffect(() => {
@@ -50,6 +61,8 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
     let current = 0;
     let last = performance.now();
     let scene: import("./giftBoxScene").GiftBoxScene | null = null;
+    let revealed = false;
+    let saveTimer = 0;
 
     const readProgress = () => {
       if (mode === "static") return 0;
@@ -96,9 +109,16 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
       paintDom(current);
       if (scene) {
         scene.setProgress(current);
-        scene.render(dt);
+        scene.render();
+        if (!revealed) {
+          // Swap in the live canvas on the frame it first draws, so the snapshot never gives way to a blank
+          revealed = true;
+          canvas.style.opacity = "1";
+          snap.style.visibility = "hidden";
+        }
       }
-      if (visible && mode === "scroll") raf = requestAnimationFrame(frame);
+      // Nothing moves on its own: once the follow has caught up, stop until the next scroll
+      if (visible && mode === "scroll" && current !== target) raf = requestAnimationFrame(frame);
     };
 
     const kick = () => {
@@ -107,8 +127,31 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
 
     const resize = () => {
       scene?.setSize(stage.clientWidth, stage.clientHeight);
+      if (scene) queueSnapshot();
       if (cardRef.current) cardRef.current.style.width = `${finalCardFraction(stage.clientWidth / stage.clientHeight) * 100}%`;
       kick();
+    };
+
+    // A reload at the top opens on last visit's first frame; otherwise the canvas fades in
+    const snap = snapshotRef.current!;
+    try {
+      const saved = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) ?? "null") as { size: string; src: string } | null;
+      if (saved?.size === stageSizeKey(stage) && readProgress() === 0) {
+        snap.src = saved.src;
+        snap.style.visibility = "visible";
+        canvas.style.transition = "none";
+      }
+    } catch {}
+
+    const saveSnapshot = () => {
+      if (disposed || !scene) return;
+      try {
+        localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({ size: stageSizeKey(stage), src: scene.snapshot() }));
+      } catch {}
+    };
+    const queueSnapshot = () => {
+      clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(saveSnapshot, 1500);
     };
 
     paintDom(0);
@@ -120,7 +163,8 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
       const mod = await import("./giftBoxScene");
       if (disposed) return;
       if (!mod.webglAvailable()) {
-        // Keep the illustration, and skip the scroll story it can't tell
+        // Show the illustration, and skip the scroll story it can't tell
+        setNoWebgl(true);
         if (mode === "scroll") setMode("static");
         return;
       }
@@ -128,13 +172,13 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
       await document.fonts?.ready;
       if (disposed) return;
       try {
-        scene = new mod.GiftBoxScene(canvas, { idle: mode === "scroll" });
+        scene = new mod.GiftBoxScene(canvas, mode === "static" ? { morph: STILL_MORPH } : {});
       } catch {
+        setNoWebgl(true);
         if (mode === "scroll") setMode("static");
         return;
       }
       resize();
-      setSceneReady(true);
       kick();
     })();
 
@@ -154,6 +198,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
+      clearTimeout(saveTimer);
       ro.disconnect();
       io.disconnect();
       window.removeEventListener("scroll", onScroll);
@@ -162,32 +207,34 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
   }, [mode]);
 
   const isScroll = mode !== "static";
+  const boxIllustration = (
+    <div
+      aria-hidden="true"
+      className="absolute inset-x-0 top-[6%] bottom-[30%] flex items-center justify-center md:[@container(min-aspect-ratio:9/10)]:inset-y-0 md:[@container(min-aspect-ratio:9/10)]:right-0 md:[@container(min-aspect-ratio:9/10)]:left-[38%] md:[@container(min-aspect-ratio:9/10)]:bottom-0"
+    >
+      <GiftBoxIllustration className="h-auto w-[min(78vw,26rem)] md:[@container(min-aspect-ratio:9/10)]:w-[min(40vw,30rem)]" />
+    </div>
+  );
 
   return (
     <section
       ref={sectionRef}
       aria-label="Introduction"
-      className={`relative bg-canvas ${isScroll ? "h-[260svh] md:h-[300svh]" : ""}`}
+      className={`relative bg-canvas ${isScroll ? "h-[290svh] md:h-[340svh]" : ""}`}
     >
       <div
         ref={stageRef}
         className={`${isScroll ? "sticky top-[var(--header-h)] md:top-[var(--header-h-md)]" : "relative"} h-[calc(100svh-var(--header-h))] min-h-[34rem] overflow-hidden [container-type:size] md:h-[calc(100svh-var(--header-h-md))]`}
       >
         {/* Warm studio backdrop */}
-        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(120%_80%_at_70%_35%,#ffffff_0%,#fdf6fc_55%,#f4e4f0_100%)]" />
-        <div aria-hidden="true" data-knots-anchor="start" className="knots-paper absolute inset-0" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(110%_80%_at_68%_38%,var(--color-studio-light)_0%,var(--color-studio)_55%,var(--color-studio-deep)_100%)]" />
 
-        <div
-          aria-hidden="true"
-          className={`absolute inset-x-0 top-[6%] bottom-[30%] flex items-center justify-center transition-opacity duration-700 md:[@container(min-aspect-ratio:9/10)]:inset-y-0 md:[@container(min-aspect-ratio:9/10)]:right-0 md:[@container(min-aspect-ratio:9/10)]:left-[38%] md:[@container(min-aspect-ratio:9/10)]:bottom-0 ${sceneReady ? "opacity-0" : "opacity-100"}`}
-        >
-          <GiftBoxIllustration className="h-auto w-[min(78vw,26rem)] md:[@container(min-aspect-ratio:9/10)]:w-[min(40vw,30rem)]" />
-        </div>
-        <canvas
-          ref={canvasRef}
-          aria-hidden="true"
-          className={`absolute inset-0 h-full w-full transition-opacity duration-700 ${sceneReady ? "opacity-100" : "opacity-0"}`}
-        />
+        {/* The flat illustration stands in only where the scene can't run (no WebGL, or no JS) */}
+        {noWebgl && boxIllustration}
+        <noscript>{boxIllustration}</noscript>
+        {/* eslint-disable-next-line @next/next/no-img-element -- a data URL of the last visit's first frame, not an optimisable asset */}
+        <img ref={snapshotRef} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full" style={{ visibility: "hidden" }} />
+        <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-700" />
 
         {/* Copy sits under the box until the stage is landscape — the same aspect test the scene frames with */}
         <div className="pointer-events-none relative z-10 container-page flex h-full items-end pb-10 md:[@container(min-aspect-ratio:9/10)]:items-center md:[@container(min-aspect-ratio:9/10)]:pb-0">
@@ -214,7 +261,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
                 <div ref={(el) => { captionRefs.current[1] = el; }} className="absolute inset-x-0 bottom-0 opacity-0 md:[@container(min-aspect-ratio:9/10)]:top-1/2 md:[@container(min-aspect-ratio:9/10)]:bottom-auto md:[@container(min-aspect-ratio:9/10)]:-translate-y-1/2" style={{ visibility: "hidden" }}>
                   <p className="eyebrow">Made to order</p>
                   <p className="mt-4 font-display text-display font-bold text-ink">
-                    Untie the <span className="accent text-knot-light">knot.</span>
+                    Lift the <span className="accent text-knot-light">lid.</span>
                   </p>
                   <p className="mt-5 max-w-[26rem] text-lg leading-relaxed text-ink-soft">
                     Sized, printed and finished for your occasion — in wood, MDF, kraft board or leatherette.
