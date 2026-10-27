@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { finalCardFraction } from "./heroCard";
+import { CARD_PRINT, HANDOFF, drawCard, finalCardFraction } from "./heroCard";
 
 // Knot Red (#C82A0F), pre-darkened so it survives ACES tone mapping and the warm key light on screen
 const KNOT_LIT = 0xa61f08;
@@ -55,19 +55,7 @@ function cardTexture() {
   const c = document.createElement("canvas");
   c.width = 512;
   c.height = 320;
-  const g = c.getContext("2d")!;
-  g.fillStyle = "#fffdf9";
-  g.fillRect(0, 0, c.width, c.height);
-  g.strokeStyle = "#c82a0f";
-  g.lineWidth = 6;
-  g.strokeRect(22, 22, c.width - 44, c.height - 44);
-  g.fillStyle = "#c82a0f";
-  g.textAlign = "center";
-  g.font = "italic 64px 'Instrument Serif', Georgia, serif";
-  g.fillText("made for you", c.width / 2, c.height / 2 + 6);
-  g.font = "600 22px 'Bricolage Grotesque', Arial, sans-serif";
-  g.fillStyle = "#1a1613";
-  g.fillText("PINK KNOTS", c.width / 2, c.height / 2 + 66);
+  drawCard(c, CARD_PRINT);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
@@ -407,11 +395,12 @@ export class GiftBoxScene {
     const cardRise = easeOut(span(p, 0.62, 0.8));
     // As the camera dives, the card settles flat on the floor under the lens, shrinking to the
     // size the DOM card takes over at (so it never looms up at the camera)
-    const settle = easeInOut(span(p, 0.74, 0.9));
+    const settle = easeInOut(span(p, 0.72, HANDOFF - 0.02));
     const floorView = 2 * (INSIDE_Y - CARD_FLOOR) * Math.tan(THREE.MathUtils.degToRad(INSIDE_FOV / 2)) * aspect;
     this.card.scale.setScalar(lerp(1, (finalCardFraction(aspect) * floorView) / CARD_W, settle));
     this.card.position.set(0, lerp(H * 0.55 + cardRise * 0.5, CARD_FLOOR, settle), lerp(0.1, -0.02, settle));
     this.card.rotation.set(lerp(-cardRise * 0.35, 0, settle), lerp(-0.12, 0, settle), 0);
+    this.card.visible = p < HANDOFF;
 
     // Box turns gently through the sequence and squares up for the descent
     this.root.rotation.y = lerp(-0.62, 0.0, easeInOut(span(p, 0, 0.6))) + Math.sin(this.time * 0.35) * 0.05 * idle;
@@ -425,14 +414,15 @@ export class GiftBoxScene {
     const start = new THREE.Vector3(offsetX, 2.5 * fit, 9.6 * fit);
     const over = new THREE.Vector3(offsetX * 0.75, 6.2 * fit, 3.2 * fit);
     // Just below the rim: every wall in view is Knot Red, with the card centred on the floor
-    const inside = new THREE.Vector3(0, INSIDE_Y, 0.06);
+    // (nearly straight down, so the card lands flat on screen like the DOM copy that replaces it)
+    const inside = new THREE.Vector3(0, INSIDE_Y, 0.0);
     const lookStart = new THREE.Vector3(offsetX, portrait ? -1.2 : 0.75, 0);
     const lookOver = new THREE.Vector3(offsetX * 0.75, portrait ? -1.4 : 0.6, 0);
     const lookInside = new THREE.Vector3(0, CARD_FLOOR, -0.02);
 
     const toOver = easeInOut(span(p, 0.36, 0.7));
-    // Lands by 0.94 so the hand-off to the DOM card (0.94 → 1) happens on a still frame
-    const toInside = easeInOut(span(p, 0.74, 0.94));
+    // Lands by HANDOFF, so the DOM card replaces this one on a still frame
+    const toInside = easeInOut(span(p, 0.72, HANDOFF));
     const camPos = start.clone().lerp(over, toOver).lerp(inside, toInside);
     const look = lookStart.clone().lerp(lookOver, toOver).lerp(lookInside, toInside);
     this.camera.position.copy(camPos);

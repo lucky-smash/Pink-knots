@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "@/components/Icons";
 import { GiftBoxIllustration } from "./GiftBoxIllustration";
-import { finalCardFraction } from "./heroCard";
+import { CARD_RENDERED, HANDOFF, SETTLED, drawCard, finalCardFraction } from "./heroCard";
 
 type Mode = "pending" | "scroll" | "static";
 
@@ -24,6 +24,8 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
   const captionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const overlayRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const cardCanvasRef = useRef<HTMLCanvasElement>(null);
+  const cardShadowRef = useRef<HTMLDivElement>(null);
   const cueRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<Mode>("pending");
   const [sceneReady, setSceneReady] = useState(false);
@@ -70,11 +72,13 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
       if (overlayRef.current) {
         // By now the camera is inside the box and the frame is already red, so this
         // only evens the lit liner out to flat Knot Red (red over red — nothing turns pink)
-        const w = clamp01((p - 0.94) / 0.06);
+        const w = clamp01((p - HANDOFF) / (SETTLED - HANDOFF));
         const o = w * w * (3 - 2 * w);
         overlayRef.current.style.opacity = String(o);
-        // The DOM card takes over from the 3D one at the same spot, then scrolls away with the page
-        if (cardRef.current) cardRef.current.style.opacity = String(o);
+        // The DOM card replaces the 3D one outright (the scene hides its card at the same p), so
+        // the overlay only ever fades behind an opaque card. Only its lift shadow fades in.
+        if (cardRef.current) cardRef.current.style.visibility = p >= HANDOFF ? "visible" : "hidden";
+        if (cardShadowRef.current) cardShadowRef.current.style.opacity = String(o);
       }
       if (cueRef.current) cueRef.current.style.opacity = String(1 - clamp01(p / 0.05));
     };
@@ -85,8 +89,9 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       target = readProgress();
-      // Critically-damped follow: smooth, but never lags more than a few frames.
-      current += (target - current) * (1 - Math.exp(-dt * 12));
+      // Critically-damped follow: smooth, but never lags more than a few frames. It tightens
+      // through the landing so the card hand-off is done before the stage scrolls away.
+      current += (target - current) * (1 - Math.exp(-dt * (target > HANDOFF - 0.1 ? 24 : 12)));
       if (Math.abs(target - current) < 0.0004) current = target;
       paintDom(current);
       if (scene) {
@@ -107,6 +112,9 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
     };
 
     paintDom(0);
+    document.fonts?.ready.then(() => {
+      if (!disposed && cardCanvasRef.current) drawCard(cardCanvasRef.current, CARD_RENDERED);
+    });
 
     (async () => {
       const mod = await import("./giftBoxScene");
@@ -223,17 +231,12 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
         </div>
 
         {isScroll && (
-          <>
-            <div ref={cueRef} className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-xs font-semibold tracking-[0.16em] text-stone uppercase md:flex" aria-hidden="true">
-              Scroll to open
-              <span className="relative block h-10 w-px overflow-hidden bg-line-strong">
-                <span className="absolute inset-x-0 top-0 h-1/2 animate-[cue_1.8s_var(--ease-in-out-soft)_infinite] bg-knot" />
-              </span>
-            </div>
-            <a href="#inside" className="absolute top-5 right-5 z-20 rounded-full bg-paper/80 px-3.5 py-1.5 text-xs font-semibold text-ink-soft backdrop-blur transition-colors hover:text-knot md:right-8">
-              Skip intro
-            </a>
-          </>
+          <div ref={cueRef} className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-xs font-semibold tracking-[0.16em] text-stone uppercase md:flex" aria-hidden="true">
+            Scroll to open
+            <span className="relative block h-10 w-px overflow-hidden bg-line-strong">
+              <span className="absolute inset-x-0 top-0 h-1/2 animate-[cue_1.8s_var(--ease-in-out-soft)_infinite] bg-knot" />
+            </span>
+          </div>
         )}
 
         {/* Settles to flat Knot Red once the camera is inside the box; the next section starts in the same red. */}
@@ -242,13 +245,12 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
           <div
             ref={cardRef}
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-1/2 z-30 aspect-[8/5] -translate-x-1/2 -translate-y-1/2 bg-[#f4f1ec] shadow-[0_18px_40px_-12px_rgb(60_8_0/0.55)]"
-            style={{ opacity: 0, containerType: "inline-size" }}
+            className="pointer-events-none absolute top-1/2 left-1/2 z-30 aspect-[8/5] -translate-x-1/2 -translate-y-1/2"
+            style={{ visibility: "hidden" }}
           >
-            <div className="absolute inset-[6.9%_4.3%] flex flex-col items-center justify-center border-[1.2cqw] border-knot">
-              <span className="accent text-[12.5cqw] leading-none text-knot">made for you</span>
-              <span className="mt-[4.5cqw] font-display text-[4.3cqw] leading-none font-semibold tracking-[0.06em] text-ink">PINK KNOTS</span>
-            </div>
+            <div ref={cardShadowRef} className="absolute inset-0 shadow-[0_18px_40px_-12px_rgb(60_8_0/0.55)]" style={{ opacity: 0 }} />
+            {/* Drawn with the same routine as the scene's card texture */}
+            <canvas ref={cardCanvasRef} width={1024} height={640} className="relative block h-full w-full" />
           </div>
         )}
       </div>
