@@ -31,18 +31,19 @@ export function ProductCard({ product, priority = false, showCategory = true }: 
         {showCategory && (
           <p className="truncate text-xs text-paper/60">{getCategory(product.category)?.name}</p>
         )}
-        <h3 className="mt-1 font-display text-[1.0625rem] leading-snug font-semibold tracking-[-0.015em] text-paper">
+        <h3 className="mt-1 font-display text-[0.9375rem] leading-snug font-semibold tracking-[-0.015em] text-paper sm:text-[1.0625rem]">
           <Link href={href} className="after:absolute after:inset-0 after:rounded-[var(--radius-card)] after:content-[''] group-hover:text-knot-on-dark focus-visible:outline-none">
             {product.name}
           </Link>
         </h3>
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
           <p className="text-sm leading-tight">
-            <span className="block font-semibold text-paper tabular-nums">{priceLabel(product)}</span>
-            {moq && <span className="mt-0.5 block text-xs text-paper/60">Min. order {moq}</span>}
+            <span className="block font-semibold whitespace-nowrap text-paper tabular-nums">{priceLabel(product)}</span>
+            {moq && <span className="mt-0.5 block text-xs whitespace-nowrap text-paper/60">Min. order {moq}</span>}
           </p>
-          {/* sits above the stretched link */}
-          <div className="relative z-10">
+          {/* Sits above the stretched link. On phones it moves onto the photo's corner, so the
+              price and minimum order get the card's full width in a two-up grid. */}
+          <div className="relative z-10 max-sm:absolute max-sm:top-4 max-sm:right-4">
             <AddToQuoteButton slug={product.slug} name={product.name} defaultQty={moqNumber(product) ?? 50} variant="compact" />
           </div>
         </div>

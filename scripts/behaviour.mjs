@@ -52,6 +52,8 @@ await adds.nth(0).click(); // list shifts: the first button is now the second pr
 const badge = await page.getByLabel(/items in quote list/).textContent();
 check("header badge counts quote items", badge?.trim() === "2", `badge=${badge}`);
 await page.goto(base + "/contact#quote", { waitUntil: "networkidle" });
+// The list is read from localStorage after hydration, which is slow on the dev server
+await page.locator("#quote fieldset ul > li").nth(1).waitFor({ timeout: 8000 }).catch(() => {});
 const rows = await page.locator("#quote fieldset ul > li").count();
 check("quote list persists to contact page", rows === 2, `rows=${rows}`);
 

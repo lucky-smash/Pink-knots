@@ -20,7 +20,7 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 // The scene's resting first frame, saved from the last visit (GiftBoxScene.snapshot), so a reload
 // opens on the same box the scene then takes over from. Keyed by stage size and pixel ratio
 // (same cap as the renderer), since it only lines up with a canvas of the same size.
-const SNAPSHOT_KEY = "pk-hero-box-v2"; // bump when the first frame changes, so no stale box shows
+const SNAPSHOT_KEY = "pk-hero-box-v3"; // bump when the first frame changes, so no stale box shows
 
 // Reduced motion / low power: no scroll story, so the ribbon holds one shape — far enough along
 // to have its satin depth, early enough that its outline is still plainly the logo's
@@ -224,7 +224,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
     >
       <div
         ref={stageRef}
-        className={`${isScroll ? "sticky top-[var(--header-h)] md:top-[var(--header-h-md)]" : "relative"} h-[calc(100svh-var(--header-h))] min-h-[34rem] overflow-hidden [container-type:size] md:h-[calc(100svh-var(--header-h-md))]`}
+        className={`${isScroll ? "sticky top-[var(--header-h)] md:top-[var(--header-h-md)]" : "relative"} h-[calc(100svh-var(--header-h))] min-h-[min(34rem,calc(100svh-var(--header-h)))] overflow-hidden [container-type:size] md:h-[calc(100svh-var(--header-h-md))]`}
       >
         {/* Warm studio backdrop */}
         <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(110%_80%_at_68%_38%,var(--color-studio-light)_0%,var(--color-studio)_55%,var(--color-studio-deep)_100%)]" />
@@ -238,21 +238,24 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
 
         {/* Copy sits under the box until the stage is landscape — the same aspect test the scene frames with */}
         <div className="pointer-events-none relative z-10 container-page flex h-full items-end pb-10 md:[@container(min-aspect-ratio:9/10)]:items-center md:[@container(min-aspect-ratio:9/10)]:pb-0">
-          <div className="relative w-full max-w-[38rem] md:max-w-[30rem] xl:max-w-[34rem]">
+          {/* Sideways on a phone the box starts ~56% across, so the column stops short of it */}
+          <div className="relative w-full max-w-[38rem] md:max-w-[30rem] xl:max-w-[34rem] short:md:max-w-[27rem]">
             {/* Caption 1 — the hero */}
             <div ref={(el) => { captionRefs.current[0] = el; }} className="pointer-events-auto will-change-transform">
-              <p className="eyebrow">Custom gift packaging · New Delhi · Since 2015</p>
-              <h1 className="mt-5 text-hero font-bold text-ink">
+              {/* One line on phones, where the box above needs the height */}
+              <p className="eyebrow">Custom gift packaging · New Delhi<span className="max-sm:hidden"> · Since 2015</span></p>
+              <h1 className="mt-3 text-hero font-bold text-ink sm:mt-5 short:mt-2">
                 The gift starts with the <span className="accent text-knot-light">box.</span>
               </h1>
-              <p className="mt-6 max-w-[30rem] text-lead text-ink-soft">
+              <p className="mt-4 max-w-[30rem] text-lead text-ink-soft max-[374px]:text-[0.9375rem] sm:mt-6 short:mt-2 short:text-[0.9375rem]">
                 Wooden trays, printed boxes and hampers for weddings, festivals and corporate gifting — made to your size, logo and design.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/collections" className="btn btn-primary">
-                  Explore collections <ArrowRight size={18} />
+              {/* Side by side on phones too: a touch smaller (still 44px tall) so both fit one row */}
+              <div className="mt-6 flex flex-wrap gap-2.5 sm:mt-8 sm:gap-3 short:mt-4">
+                <Link href="/collections" className="btn btn-primary max-sm:min-h-11 max-sm:gap-1.5 max-sm:px-4 max-sm:text-sm max-[374px]:px-3.5 max-[374px]:[&>svg]:hidden">
+                  Explore collections <ArrowRight size={16} />
                 </Link>
-                <Link href="/contact#quote" className="btn btn-outline">Request a quote</Link>
+                <Link href="/contact#quote" className="btn btn-outline max-sm:min-h-11 max-sm:px-4 max-sm:text-sm max-[374px]:px-3.5">Request a quote</Link>
               </div>
             </div>
 
@@ -280,7 +283,7 @@ export function GiftHero({ productCount, collectionCount }: { productCount: numb
         </div>
 
         {isScroll && (
-          <div ref={cueRef} className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-xs font-semibold tracking-[0.16em] text-stone uppercase md:[@container(min-aspect-ratio:9/10)]:flex" aria-hidden="true">
+          <div ref={cueRef} className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-xs font-semibold tracking-[0.16em] text-stone uppercase md:[@container(min-aspect-ratio:9/10)]:flex short:hidden!" aria-hidden="true">
             Scroll to open
             <span className="relative block h-10 w-px overflow-hidden bg-line-strong">
               <span className="absolute inset-x-0 top-0 h-1/2 animate-[cue_1.8s_var(--ease-in-out-soft)_infinite] bg-knot" />

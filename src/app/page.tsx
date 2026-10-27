@@ -128,6 +128,7 @@ export default function HomePage() {
           <p className="eyebrow">Materials</p>
           <h2 id="materials-title" className="mt-4 text-title font-bold">Chosen for the gift inside.</h2>
         </Reveal>
+        {/* Landscape photos on phones, so each material is half a screen rather than more than one */}
         <div className="mt-10 grid gap-5 lg:gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {MATERIALS.map((m, i) => {
             const p = getProduct(m.slug);
@@ -136,9 +137,9 @@ export default function HomePage() {
               <Reveal key={m.title} delay={i * 80}>
                 <Link href={p ? `/products/${p.slug}` : "/collections"} className="card-box group block h-full">
                   {img ? (
-                    <ProductPhoto src={img} alt={p!.name} cutout={isCutout(p!)} sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 90vw" className="aspect-[4/5] rounded-[calc(var(--radius-card)-0.375rem)]" />
+                    <ProductPhoto src={img} alt={p!.name} cutout={isCutout(p!)} sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 90vw" className="aspect-[4/3] rounded-[calc(var(--radius-card)-0.375rem)] sm:aspect-[4/5]" />
                   ) : (
-                    <div className="aspect-[4/5] rounded-[calc(var(--radius-card)-0.375rem)] bg-mat" />
+                    <div className="aspect-[4/3] rounded-[calc(var(--radius-card)-0.375rem)] bg-mat sm:aspect-[4/5]" />
                   )}
                   <div className="px-3 pt-4 pb-2">
                     <h3 className="text-subtitle font-semibold transition-colors group-hover:text-knot-on-dark">{m.title}</h3>

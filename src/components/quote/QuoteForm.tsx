@@ -215,8 +215,9 @@ export function QuoteForm({ lookup, phone, enquiryUrl }: { lookup: QuoteLookup; 
 function Field({ id, label, hint, required, error, children }: { id: string; label: string; hint?: string; required?: boolean; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={`q-${id}`} className="mb-1.5 flex items-baseline justify-between gap-3 text-sm font-medium text-ink">
-        <span>{label}{required && <span className="text-knot" aria-hidden="true"> *</span>}</span>
+      {/* A long hint drops under the label rather than squeezing it onto two lines */}
+      <label htmlFor={`q-${id}`} className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-sm font-medium text-ink">
+        <span className="whitespace-nowrap">{label}{required && <span className="text-knot" aria-hidden="true"> *</span>}</span>
         {hint && <span className="text-xs font-normal text-stone">{hint}</span>}
       </label>
       {children}

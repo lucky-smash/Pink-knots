@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Short screens: phones held sideways. `short:` tightens layouts that are otherwise sized for portrait. */
+@custom-variant short (@media (max-height: 500px));
+
 /*
  * Pink Knots design tokens. Rationale and measurements: docs/PINK_KNOTS_BRAND_AUDIT.md
  *
@@ -50,7 +53,8 @@
   --font-accent: var(--font-instrument), ui-serif, Georgia, serif;
 
   /* Fluid type scale (display sizes only; body uses the default rem scale) */
-  --text-hero: clamp(2.75rem, 1.6rem + 5.2vw, 6.5rem);
+  /* Sized by the smaller of width and height, so a phone held sideways doesn't get a desktop headline */
+  --text-hero: clamp(2.75rem, min(1.6rem + 5.2vw, 1rem + 9svh), 6.5rem);
   --text-hero--line-height: 0.95;
   --text-hero--letter-spacing: -0.035em;
   --text-display: clamp(2.25rem, 1.5rem + 3.2vw, 4.5rem);
@@ -107,6 +111,11 @@
   --color-text-primary: var(--color-ink);
   --color-text-secondary: var(--color-stone);
   --color-border: var(--color-line);
+}
+
+/* Phones held sideways keep the compact header; every sticky offset reads this token */
+@media (max-height: 500px) {
+  :root { --header-h-md: var(--header-h); }
 }
 
 @layer base {
